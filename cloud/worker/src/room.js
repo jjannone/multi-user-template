@@ -42,6 +42,18 @@ export class MuRoom {
   // ── HTTP entry ───────────────────────────────────────────────
 
   async fetch(request) {
+    // Non-WS action: respond with a 302 to the host's last-announced
+    // LAN URL, or a friendly 404 if no host has registered one yet.
+    if (request.headers.get("x-mu-action") === "lanurl") {
+      const lanUrl = await this.state.storage.get("lanUrl");
+      if (lanUrl) return Response.redirect(lanUrl, 302);
+      return new Response(
+        "No Max host is currently connected to this room.\n" +
+        "Open the Max patch and press \"Cloud connect\" so the relay knows the LAN URL.",
+        { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } }
+      );
+    }
+
     const role  = request.headers.get("x-mu-role")  || "perform";
     const piece = request.headers.get("x-mu-piece") || "";
     const room  = request.headers.get("x-mu-room")  || "";
@@ -105,6 +117,14 @@ export class MuRoom {
     }
 
     if (me.role === ROLE_HOST) {
+      // Host-info: lets the relay know the host's current LAN URL so a
+      // static page can build a "Local mode" link without knowing the
+      // laptop's IP. Stored durably; survives DO hibernation.
+      if (msg.type === "host-info" && typeof msg.lanUrl === "string" && msg.lanUrl) {
+        this.state.storage.put("lanUrl", msg.lanUrl);
+        // Don't forward — this is host↔relay metadata only.
+        return;
+      }
       this._fromHost(ws, msg);
     } else if (me.role === ROLE_PERFORM) {
       // Performers send anything the LAN client would send. Pass through

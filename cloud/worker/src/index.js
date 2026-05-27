@@ -27,7 +27,13 @@
 
 export { MuRoom } from "./room.js";
 
-const URL_RE = /^\/mu\/([A-Za-z0-9_\-]+)\/([A-Za-z0-9_\-]+)\/(host|perform|audience)\/?$/;
+const URL_RE     = /^\/mu\/([A-Za-z0-9_\-]+)\/([A-Za-z0-9_\-]+)\/(host|perform|audience)\/?$/;
+// HTTP redirect endpoint: GET /lan/<piece>/<room> → 302 to the LAN URL
+// the host most recently announced for that room. Used by static
+// landing pages (e.g. the "Local mode" button on john.jann.one) so a
+// click resolves to http://<laptop-lan-ip>:8080/ without the static
+// page having to know the laptop's current IP.
+const LAN_RE     = /^\/lan\/([A-Za-z0-9_\-]+)\/([A-Za-z0-9_\-]+)\/?$/;
 
 export default {
   async fetch(request, env) {
@@ -42,6 +48,21 @@ export default {
         url_shape: "/mu/<piece>/<room>/<host|perform|audience>",
         ts: Date.now()
       }), { headers: { "content-type": "application/json", "access-control-allow-origin": "*" } });
+    }
+
+    // /lan/<piece>/<room> — HTTP redirect to the registered LAN URL
+    // for that room. Lives in DO storage; updated by the host via a
+    // {type:"host-info", lanUrl:"…"} WS message on Cloud connect.
+    const lanM = url.pathname.match(LAN_RE);
+    if (lanM) {
+      const [, piece, room] = lanM;
+      const id   = env.ROOMS.idFromName(`${piece}:${room}`);
+      const stub = env.ROOMS.get(id);
+      const req  = new Request(request);
+      req.headers.set("x-mu-action", "lanurl");
+      req.headers.set("x-mu-piece",  piece);
+      req.headers.set("x-mu-room",   room);
+      return stub.fetch(req);
     }
 
     const m = url.pathname.match(URL_RE);

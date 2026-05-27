@@ -876,6 +876,11 @@ Max.addHandler("setport", (p) => {
   Max.post(`port → ${port} — restarting`);
   stopServer();
   startServer();
+  // Re-announce LAN URL to the relay so /lan/<piece>/<room> stays
+  // accurate after a port change.
+  if (cloudWs && cloudReady) {
+    try { cloudWs.send(JSON.stringify({ type: "host-info", lanUrl: publicUrl() })); } catch (_) {}
+  }
 });
 
 Max.addHandler("setoscport", (p) => {
@@ -1102,6 +1107,10 @@ function cloudConnect() {
     cloudReady = true;
     emitCloudConnected(true);
     emitCloudStatus(`cloud host live — ${cloudCfg.piece}:${cloudCfg.room}`);
+    // Announce our LAN URL to the relay so the /lan/<piece>/<room>
+    // redirect endpoint (used by static "Local mode" buttons on
+    // landing pages) can resolve to a real http://<lan-ip>:8080/.
+    try { sock.send(JSON.stringify({ type: "host-info", lanUrl: publicUrl() })); } catch (_) {}
     // Push the current snapshot immediately so any waiting remote
     // performers / audience hear about us.
     broadcastSnapshot();
