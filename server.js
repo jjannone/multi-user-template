@@ -1049,7 +1049,7 @@ const cloudCfg = {
   // Used to build the shareable performer / audience URLs. Default points
   // at GitHub Pages for the template repo; derived repos should override
   // via `setsitebase`.
-  siteBase: "https://jjannone.github.io/multi-user-template/"
+  siteBase: "https://john.jann.one/multi-user-template/"
 };
 
 function emitCloudStatus(text) {

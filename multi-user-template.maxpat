@@ -1184,10 +1184,10 @@
 							"parameter_shortname" : "siteBase",
 							"parameter_type" : 3,
 							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "https://jjannone.github.io/multi-user-template/" ]
+							"parameter_initial" : [ "https://john.jann.one/multi-user-template/" ]
 						}
 					},
-					"text" : "https://jjannone.github.io/multi-user-template/"
+					"text" : "https://john.jann.one/multi-user-template/"
 				}
 			},
 			{
