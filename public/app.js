@@ -193,14 +193,17 @@ function handleServerMessage(msg) {
     if (msg.you && pendingRoles.size === 0 && msg.you.roles.length > 0) {
       pendingRoles = new Set(msg.you.roles);
     }
-    // Full re-render on:
-    //   - first snapshot (the join page's role tiles need availableRoles,
-    //     which arrives in the snapshot — without this re-render, the
-    //     initial paint shows an empty role grid and never recovers)
-    //   - stage transition (lobby ↔ stage swaps the whole screen)
-    // Otherwise refresh roster + header in place so we don't stomp on
-    // whatever tab / sensor card the user is interacting with.
-    if (firstSnap || (prevStarted ? 1 : 0) !== (msg.started ? 1 : 0)) {
+    // Re-render unconditionally on the Join and Lobby screens. They
+    // depend on snapshot-derived state that changes in-place (role
+    // tiles populated, you.isAdmin flipping after admin role lands,
+    // adminRequiresPassword toggling, etc.) and they have no expensive
+    // interactive state to stomp. On the Stage screen we only do a
+    // full re-render on a stage transition; the 2s ticks just patch
+    // the header + roster so we don't reset active sensor toggles or
+    // the current tab.
+    const onStage = !!(myName && msg.started);
+    const transitionedStage = (prevStarted ? 1 : 0) !== (msg.started ? 1 : 0);
+    if (firstSnap || transitionedStage || !onStage) {
       render();
     } else {
       updateHeader();
@@ -355,14 +358,14 @@ function renderLobby() {
       <div class="row">
         <button class="ghost" id="change-btn">Change roles</button>
         <button class="ghost" id="leave-btn">Leave</button>
+        ${canStart ? `<button class="hot" id="start-btn">START PIECE</button>` : ""}
       </div>
       <div class="err" id="err"></div>
     </div>
 
     <div class="lobby-banner ${canStart ? "admin-can-start" : ""}">
-      ${canStart ? "You are admin — tap START when ready." : "Waiting for an admin to start the piece…"}
+      ${canStart ? "You are admin — tap START PIECE above when ready." : "Waiting for an admin to start the piece…"}
     </div>
-    ${canStart ? `<div class="row"><button class="hot" id="start-btn" style="flex:1">START PIECE</button></div>` : ""}
 
     <div class="panel">
       <h2>Lobby roster (${lastSnap ? lastSnap.roster.length : 0})</h2>
