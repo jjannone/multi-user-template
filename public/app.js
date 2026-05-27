@@ -615,23 +615,54 @@ function renderCameraTab() {
        <div class="row" style="margin-top:10px;align-items:center">
          <label style="display:flex;align-items:center;gap:6px">
            <input type="checkbox" id="camera-stream" />
-           Stream frames to Max (~3 fps JPEG)
+           Stream frames to Max
          </label>
+       </div>
+       <div class="row" style="margin-top:8px;align-items:center;gap:6px">
+         <label style="font-size:12px;color:var(--muted)">size</label>
+         <select id="camera-size">
+           <option value="320x240">320×240 (low, ~5 KB)</option>
+           <option value="640x480" selected>640×480 (default, ~25 KB)</option>
+           <option value="960x540">960×540 (~50 KB)</option>
+           <option value="1280x720">1280×720 (high, ~90 KB)</option>
+         </select>
+         <label style="font-size:12px;color:var(--muted);margin-left:8px">quality</label>
+         <select id="camera-q">
+           <option value="0.5">0.5</option>
+           <option value="0.7" selected>0.7</option>
+           <option value="0.85">0.85</option>
+         </select>
+         <label style="font-size:12px;color:var(--muted);margin-left:8px">fps</label>
+         <select id="camera-fps">
+           <option value="2">2</option>
+           <option value="4" selected>4</option>
+           <option value="8">8</option>
+           <option value="15">15</option>
+         </select>
        </div>
        <div class="v" id="camera-stream-status" style="font-size:12px;color:var(--muted);margin-top:6px">off</div>
      </div>`;
   bindSensorCards(div);
   queueMicrotask(() => {
     const cb = div.querySelector("#camera-stream");
+    const sz = div.querySelector("#camera-size");
+    const q  = div.querySelector("#camera-q");
+    const fp = div.querySelector("#camera-fps");
+    const restart = () => { if (cb && cb.checked) setCameraStreaming(true); };
     if (cb) cb.onchange = () => setCameraStreaming(cb.checked);
+    if (sz) sz.onchange = restart;
+    if (q)  q.onchange  = restart;
+    if (fp) fp.onchange = restart;
   });
   return div;
 }
 
-// Frame-streaming for the Detail panel's jit.pwindow. Only meaningful
-// while the Camera card is ON (we need an active stream to capture
-// from). Posts a JPEG dataURL once every 333 ms; the server decodes
-// and writes a per-performer temp file the patch's jit.matrix reads.
+// Frame-streaming for the Detail panel's jit.pwindow. Reads size /
+// JPEG quality / fps from the Camera tab's dropdowns so the operator
+// can trade off resolution against bandwidth at runtime. The source
+// getUserMedia track itself is requested at 1280×720 ideal (see
+// startCamera) so even the 720p preset has actual pixels to downscale
+// from; lower presets just letterbox the canvas smaller.
 function setCameraStreaming(on) {
   const s = sensors.camera;
   const status = document.getElementById("camera-stream-status");
@@ -647,26 +678,41 @@ function setCameraStreaming(on) {
     if (cb) cb.checked = false;
     return;
   }
-  if (!s.streamCanvas) {
-    s.streamCanvas = document.createElement("canvas");
-    s.streamCanvas.width = 320; s.streamCanvas.height = 240;
-  }
+  // Stop any prior timer so a dropdown change replaces cleanly.
+  if (s.streamTimer) { clearInterval(s.streamTimer); s.streamTimer = 0; }
+
+  const sizeStr = (document.getElementById("camera-size") || {}).value || "640x480";
+  const [w, h]  = sizeStr.split("x").map(n => parseInt(n, 10));
+  const quality = parseFloat((document.getElementById("camera-q") || {}).value || "0.7");
+  const fps     = parseInt((document.getElementById("camera-fps") || {}).value || "4", 10);
+  const periodMs = Math.max(33, Math.round(1000 / fps));
+
+  if (!s.streamCanvas) s.streamCanvas = document.createElement("canvas");
+  s.streamCanvas.width  = w;
+  s.streamCanvas.height = h;
+
   const video = document.getElementById("camera-prev");
   const ctx = s.streamCanvas.getContext("2d");
   let frames = 0;
   s.streamTimer = setInterval(() => {
     if (!sensors.camera.on || !video || video.videoWidth === 0) return;
     try {
-      ctx.drawImage(video, 0, 0, s.streamCanvas.width, s.streamCanvas.height);
-      const dataUrl = s.streamCanvas.toDataURL("image/jpeg", 0.5);
+      ctx.drawImage(video, 0, 0, w, h);
+      const dataUrl = s.streamCanvas.toDataURL("image/jpeg", quality);
       sendSensor("video", { frame: dataUrl });
       frames++;
-      if (status && frames % 6 === 0) status.textContent = `streaming — ${frames} frames sent`;
+      if (status && frames % Math.max(1, fps) === 0) {
+        // Show approximate KB per frame so the operator can see what
+        // they're spending — dataUrl.length is base64 chars (4 chars
+        // per 3 bytes), so * 0.75 / 1024 gives KB.
+        const kb = (dataUrl.length * 0.75 / 1024).toFixed(1);
+        status.textContent = `streaming — ${w}×${h} @ ${fps} fps, ~${kb} KB/frame, ${frames} sent`;
+      }
     } catch (e) {
       if (status) status.textContent = "capture failed: " + e.message;
     }
-  }, 333);
-  if (status) status.textContent = "streaming — opens the patch's Detail jit.pwindow";
+  }, periodMs);
+  if (status) status.textContent = `streaming — ${w}×${h} @ ${fps} fps`;
 }
 
 function renderTouchTab() {
@@ -1217,7 +1263,17 @@ function startSpeech() {
 }
 
 async function startCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+  // Request HD source (1280×720) so the streaming presets up to 720p
+  // have native pixels to render from. The browser will pick the
+  // closest match the camera supports — falls back gracefully on
+  // older phones / webcams.
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: "user",
+      width:  { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  });
   sensors.camera.on = true; sensors.camera.stream = stream;
   const v = document.getElementById("camera-prev");
   if (v) { v.srcObject = stream; v.style.display = "block"; }

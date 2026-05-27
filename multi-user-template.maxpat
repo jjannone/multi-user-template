@@ -3742,7 +3742,7 @@
                         240.0,
                         22.0
                     ],
-                    "text": "jit.matrix mu_focus_video 4 char 320 240 @usesrcdim 1"
+                    "text": "jit.matrix mu_focus_video 4 char 1280 720 @usesrcdim 1"
                 }
             },
             {
