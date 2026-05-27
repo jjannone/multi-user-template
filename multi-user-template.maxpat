@@ -923,54 +923,6 @@
 
 			{
 				"box" : 				{
-					"id" : "obj-c-cloudurl",
-					"presentation" : 1,
-					"presentation_rect" : [ 430.0, 246.0, 80.0, 20.0 ],
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 700.0, 560.0, 100.0, 20.0 ],
-					"text" : "Cloud URL"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-t-cloudurl",
-					"presentation" : 1,
-					"presentation_rect" : [ 510.0, 244.0, 580.0, 26.0 ],
-					"maxclass" : "textedit",
-					"numinlets" : 1,
-					"numoutlets" : 4,
-					"outlettype" : [ "", "int", "", "" ],
-					"patching_rect" : [ 800.0, 558.0, 380.0, 26.0 ],
-					"parameter_enable" : 1,
-					"saved_attribute_attributes" : 					{
-						"valueof" : 						{
-							"parameter_longname" : "cloudUrl",
-							"parameter_shortname" : "cloudUrl",
-							"parameter_type" : 3,
-							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "wss://mu-relay.jannone-544.workers.dev" ]
-						}
-					},
-					"text" : "wss://mu-relay.jannone-544.workers.dev"
-				}
-			},
-			{
-				"box" : 				{
-					"hidden" : 1,
-					"id" : "obj-p-cloudurl",
-					"maxclass" : "newobj",
-					"numinlets" : 2,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 800.0, 586.0, 140.0, 22.0 ],
-					"text" : "prepend setcloudurl"
-				}
-			},
-
-			{
-				"box" : 				{
 					"id" : "obj-c-piece",
 					"presentation" : 1,
 					"presentation_rect" : [ 20.0, 246.0, 60.0, 20.0 ],
@@ -1440,8 +1392,6 @@
 			{ "patchline" : { "source" : [ "obj-msg-cutoff-hi",   0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-msg-modindex",    0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
 
-			{ "patchline" : { "source" : [ "obj-t-cloudurl", 0 ],   "destination" : [ "obj-p-cloudurl", 0 ],   "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-p-cloudurl", 0 ],   "destination" : [ "obj-node", 0 ],         "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-t-piece",    0 ],   "destination" : [ "obj-p-piece",    0 ],   "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-p-piece",    0 ],   "destination" : [ "obj-node", 0 ],         "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-t-room",     0 ],   "destination" : [ "obj-p-room",     0 ],   "hidden" : 1 } },
@@ -1459,7 +1409,6 @@
 			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock", 0 ], "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-loadbang",   0 ], "destination" : [ "obj-delay-init", 0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-cloudurl",  0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-piece",     0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-room",      0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-sitebase",  0 ], "hidden" : 1 } },

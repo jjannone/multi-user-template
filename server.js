@@ -1056,7 +1056,12 @@ let cloudReconnTimer = null;
 let cloudClosing  = false;  // distinguish user-requested disconnect from drops
 
 const cloudCfg = {
-  url:   "",                  // wss://mu-relay.<sub>.workers.dev
+  // Shared mu-relay Cloudflare Worker URL. Baked in here rather than
+  // exposed as a textedit in the patch — textedit was a poor fit for
+  // set-once config (see Claude2Max CLAUDE.md > "Don't use [textedit]
+  // for set-once configuration"). Derived repos override this constant
+  // directly in their fork's server.js if they deploy their own relay.
+  url:   "wss://mu-relay.jannone-544.workers.dev",
   piece: "multi-user-template",
   room:  "main",
   // Static site base where the client (public/index.html) is hosted.
