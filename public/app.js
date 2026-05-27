@@ -75,7 +75,7 @@ const sensors = {
   proximity: { on: false },
   geo:       { on: false, watchId: null },
   mic:       { on: false, ctx: null, stream: null, raf: 0, analyser: null, audioProc: null, audioSrc: null, audioGain: null },
-  camera:    { on: false, stream: null, streamTimer: 0, streamCanvas: null },
+  camera:    { on: false, stream: null, streamTimer: 0, streamCanvas: null, nativeW: 0, nativeH: 0 },
   speech:    { on: false, rec: null },
   pointer:   { on: false },
   gamepad:   { on: false, raf: 0 },
@@ -621,11 +621,12 @@ function renderCameraTab() {
        <div class="row" style="margin-top:8px;align-items:center;gap:6px">
          <label style="font-size:12px;color:var(--muted)">size</label>
          <select id="camera-size">
-           <option value="320x240">320×240 (low, ~5 KB)</option>
-           <option value="640x480" selected>640×480 (default, ~25 KB)</option>
-           <option value="960x540">960×540 (~50 KB)</option>
-           <option value="1280x720">1280×720 (high, ~90 KB)</option>
+           <option value="0.125">1/8 native</option>
+           <option value="0.25">1/4 native</option>
+           <option value="0.5" selected>1/2 native</option>
+           <option value="1.0">Full native</option>
          </select>
+         <span id="camera-native" style="font-size:11px;color:var(--muted);margin-left:4px">native: ?</span>
          <label style="font-size:12px;color:var(--muted);margin-left:8px">quality</label>
          <select id="camera-q">
            <option value="0.5">0.5</option>
@@ -681,8 +682,18 @@ function setCameraStreaming(on) {
   // Stop any prior timer so a dropdown change replaces cleanly.
   if (s.streamTimer) { clearInterval(s.streamTimer); s.streamTimer = 0; }
 
-  const sizeStr = (document.getElementById("camera-size") || {}).value || "640x480";
-  const [w, h]  = sizeStr.split("x").map(n => parseInt(n, 10));
+  // Refresh native dims in case the video stream changed (e.g. user
+  // switched cameras) since the camera card was first turned on.
+  updateCameraNative();
+
+  const frac    = parseFloat((document.getElementById("camera-size") || {}).value || "0.5");
+  // Fallback if loadedmetadata hasn't fired yet — assume 1280×720
+  // until we know better. The dropdown labels will fill in once
+  // updateCameraNative gets actual dims.
+  const baseW   = s.nativeW || 1280;
+  const baseH   = s.nativeH || 720;
+  const w       = Math.max(16, Math.round(baseW * frac));
+  const h       = Math.max(16, Math.round(baseH * frac));
   const quality = parseFloat((document.getElementById("camera-q") || {}).value || "0.7");
   const fps     = parseInt((document.getElementById("camera-fps") || {}).value || "4", 10);
   const periodMs = Math.max(33, Math.round(1000 / fps));
@@ -1276,8 +1287,52 @@ async function startCamera() {
   });
   sensors.camera.on = true; sensors.camera.stream = stream;
   const v = document.getElementById("camera-prev");
-  if (v) { v.srcObject = stream; v.style.display = "block"; }
+  if (v) {
+    v.srcObject = stream; v.style.display = "block";
+    // Native resolution isn't known until the video element has the
+    // first frame loaded (videoWidth / videoHeight are 0 before
+    // loadedmetadata fires). Capture it then; also read from the
+    // track's getSettings as a fallback (some browsers populate this
+    // before the <video> reports dims).
+    v.addEventListener("loadedmetadata", () => updateCameraNative(), { once: true });
+  }
+  // Read track-side settings now — usually populated immediately after
+  // getUserMedia resolves on Chromium-based browsers.
+  updateCameraNative();
   readout("camera", "preview live — frames stay on-device until you wire a sender");
+}
+
+function updateCameraNative() {
+  const s = sensors.camera;
+  const v = document.getElementById("camera-prev");
+  let w = 0, h = 0;
+  if (v && v.videoWidth > 0) { w = v.videoWidth; h = v.videoHeight; }
+  if (!w && s.stream) {
+    const tracks = s.stream.getVideoTracks();
+    if (tracks[0]) {
+      const settings = tracks[0].getSettings();
+      if (settings.width)  w = settings.width;
+      if (settings.height) h = settings.height;
+    }
+  }
+  if (!w || !h) return;
+  s.nativeW = w; s.nativeH = h;
+  const label = document.getElementById("camera-native");
+  if (label) label.textContent = `native: ${w}×${h}`;
+  // Re-label each fraction option with its actual computed pixel dims.
+  const sel = document.getElementById("camera-size");
+  if (sel) {
+    for (const opt of sel.options) {
+      const frac = parseFloat(opt.value);
+      const fw = Math.max(2, Math.round(w * frac));
+      const fh = Math.max(2, Math.round(h * frac));
+      const name = opt.value === "1.0" ? "Full native" :
+                   opt.value === "0.5" ? "1/2 native"  :
+                   opt.value === "0.25" ? "1/4 native" :
+                   opt.value === "0.125" ? "1/8 native" : opt.value;
+      opt.textContent = `${name} (${fw}×${fh})`;
+    }
+  }
 }
 
 function startGamepad() {
