@@ -1667,17 +1667,30 @@ function renderLanding() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <h1>multi-user template</h1>
-    <p>This is a Max/MSP framework that turns phones into controllers — sensors, MIDI, sliders, mic, camera, multitouch — for collaborative pieces.</p>
+    <p>A Max/MSP framework that turns phones into controllers — sensors, MIDI, sliders, mic, camera, multitouch — for collaborative pieces.</p>
 
     <div class="panel">
-      <h2>To use it</h2>
-      <p>You'll get a custom link from whoever's running the show: a <strong>Performer URL</strong> if you're playing, or an <strong>Audience URL</strong> if you're watching. Those links include the relay address, piece, and room — they're how your phone finds the Max patch.</p>
-      <p>If you don't have a link yet, ask the operator.</p>
+      <h2>Three ways in</h2>
+      <p>Pieces are reachable via one of three URL types. The operator decides which to hand out depending on whether you're on the venue's wifi (LAN), joining over the internet (cloud relay), or watching as audience.</p>
+
+      <h3 style="margin-top:14px;font-size:14px">1. Local (LAN)</h3>
+      <p><code>http://&lt;laptop-lan-ip&gt;:8080/</code></p>
+      <p>Same wifi as the laptop running Max. Lowest latency, no internet required. The patch shows this URL as <strong>Local URL</strong>.</p>
+
+      <h3 style="margin-top:14px;font-size:14px">2. Performer (cloud)</h3>
+      <p><code>https://john.jann.one/multi-user-template/?cloud=…&piece=…&room=…</code></p>
+      <p>Full Stage UI from anywhere with internet, via the Cloudflare Worker relay. Same sensor / MIDI / synth surface as LAN performers. The patch shows this URL as <strong>Performer URL</strong>.</p>
+
+      <h3 style="margin-top:14px;font-size:14px">3. Audience (cloud)</h3>
+      <p><code>https://john.jann.one/multi-user-template/?cloud=…&piece=…&room=…&view=audience</code></p>
+      <p>Stripped-down UI: live roster + reaction buttons + a small audience-input pad. The patch shows this URL as <strong>Audience URL</strong>.</p>
+
+      <p style="margin-top:14px">If you don't have a link, ask the operator — they paste the right one out of the patch.</p>
     </div>
 
     <div class="panel">
       <h2>Run it yourself</h2>
-      <p>Clone the repo, open the Max patch, point performers at <code>http://&lt;your-lan-ip&gt;:8080/</code>. For remote performers or audience over the internet, deploy the Cloudflare Worker in <code>cloud/worker/</code> and connect from the patch's CLOUD RELAY section — it generates the share URLs for you.</p>
+      <p>Clone the repo, open the Max patch, <code>npm install</code> in the repo root and in <code>cloud/worker/</code>, deploy the Worker with <code>wrangler deploy</code>, paste the resulting <code>wss://…</code> URL into the patch's CLOUD RELAY section, press <strong>Cloud connect</strong>. The patch then generates the three share URLs (Local / Performer / Audience) on the fly.</p>
       <p class="row" style="margin-top:10px">
         <a class="ghost" style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);text-decoration:none;color:var(--fg)" href="https://github.com/jjannone/multi-user-template">View source on GitHub</a>
         <a class="ghost" style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);text-decoration:none;color:var(--fg)" href="/">← Back to projects</a>
