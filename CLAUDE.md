@@ -230,6 +230,29 @@ rejoin would be a confusing surprise three minutes later. If you need a
 guaranteed-delivery semantic, layer it on top (e.g., a "current state"
 broadcast on join).
 
+### "Hangs on connecting…" almost always means `node_modules/` is missing
+
+When the client page loads (HTML appears) but the WebSocket never opens
+and the UI is stuck on "connecting…", the diagnostic is to check
+`node_modules/` in the repo root. If it's missing, `require("ws")` and
+`require("osc")` both throw inside `node.script`; the HTTP server still
+serves the static client because `http` is a built-in Node module, but
+nothing answers the subsequent WebSocket upgrade — hence the hang.
+
+The fix is `npm install` from the repo root and a patch reopen. Other
+symptoms that point at the same cause:
+
+- `Max console: ws module missing — run npm install` posted at boot.
+- `Max console: OSC fan-out` line absent (or `osc module missing`).
+- `Local URL:` field is populated (HTTP server is alive) but the
+  client never advances past the join page's "connecting…" header.
+
+`node_modules/` is in `.gitignore` by design — lockfiles travel,
+dependencies install locally. A clean clone, a Dropbox-sync conflict,
+or a manual delete can drop it without warning. **Don't try to debug
+the client first** when this symptom appears; check `ls node_modules`
+in the repo root before anything else.
+
 ### Cloud bridge: same room, two transports, one unified roster
 
 The LAN HTTP+WS server in `server.js` continues to be authoritative.
