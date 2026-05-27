@@ -12,7 +12,13 @@
 <body>
   <header>
     <div class="who" id="who">multi-user template</div>
-    <div class="meta" id="meta">connecting…</div>
+    <div class="meta-group">
+      <span class="meta" id="meta">connecting…</span>
+      <!-- Always-visible reload affordance. If the WS hangs (LAN
+           firewall, dead relay, stale tab, etc.) the user can tap this
+           instead of fishing through the browser menu. -->
+      <button class="reload" title="Reload" onclick="location.reload()">↻</button>
+    </div>
   </header>
   <main id="main"><!-- screens injected here --></main>
   <script src="/app.js"></script>

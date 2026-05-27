@@ -27,9 +27,18 @@ header {
   border-bottom: 1px solid var(--line);
 }
 header .who   { font-size: 16px; font-weight: 600; }
+header .meta-group { display: flex; gap: 8px; align-items: center; }
 header .meta  { color: var(--muted); font-size: 12px; }
 header .meta.started { color: var(--hot); }
 header .meta.warn    { color: var(--warn); }
+header .reload {
+  padding: 2px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent;
+  color: var(--muted); font-size: 14px; cursor: pointer; line-height: 1;
+}
+header .reload:hover, header .reload:active {
+  color: var(--fg); border-color: var(--fg);
+}
 
 main {
   flex: 1; padding: 14px 16px 24px;
