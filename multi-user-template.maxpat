@@ -972,10 +972,10 @@
 							"parameter_shortname" : "cloudUrl",
 							"parameter_type" : 3,
 							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "wss://mu-relay.<your-subdomain>.workers.dev" ]
+							"parameter_initial" : [ "wss://mu-relay.jannone-544.workers.dev" ]
 						}
 					},
-					"text" : "wss://mu-relay.<your-subdomain>.workers.dev"
+					"text" : "wss://mu-relay.jannone-544.workers.dev"
 				}
 			},
 			{

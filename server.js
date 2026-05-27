@@ -1104,6 +1104,17 @@ function emitShareUrls() {
 function cloudConnect() {
   if (!WSClient) { emitCloudStatus("cloud disabled — ws module not loaded"); return; }
   if (!cloudCfg.url) { emitCloudStatus("set cloud URL first"); return; }
+  // Catch un-edited placeholder text early — otherwise the ws library
+  // tries to dial a literal "<your-subdomain>" host and throws an
+  // opaque "Invalid URL" error mid-connect.
+  if (/<[^>]+>/.test(cloudCfg.url)) {
+    emitCloudStatus(`Cloud URL contains a placeholder (${cloudCfg.url}). Replace with your actual deployed worker URL.`);
+    return;
+  }
+  if (!/^wss?:\/\//.test(cloudCfg.url)) {
+    emitCloudStatus(`Cloud URL must start with wss:// or ws:// — got "${cloudCfg.url}"`);
+    return;
+  }
   cloudDisconnect(true /* silent */);
   cloudClosing = false;
   const u = buildCloudWsUrl();
