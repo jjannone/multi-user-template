@@ -770,15 +770,28 @@ function broadcastSnapshot() {
       sendTo(ws, snapshotFor(wsToName.get(ws) || null));
     });
   }
-  // Cloud-side: send a personalized snapshot to each connected remote
-  // performer (directed by `to`), and a non-personalized one to all
-  // audience members.
+  // Cloud-side: send three layers in order so every connected client
+  // ends up with the correct view.
+  //
+  // 1. Generic snapshot to ALL perform connections — covers fresh
+  //    joiners that haven't sent their {type:"join"} yet (no name on
+  //    the host side, so no per-name directed message would reach
+  //    them).
+  // 2. Generic snapshot to ALL audience connections — they don't have
+  //    a `you` field anyway.
+  // 3. Personalized snapshot directed to each named remote performer
+  //    — overwrites the generic above with a `you` field.
+  //
+  // Order matters: generic FIRST so the directed snapshot's `you`
+  // field wins on named performers. Reversing this order causes the
+  // generic to clobber `you` after the directed arrived.
   if (cloudWs && cloudReady) {
+    try { cloudWs.send(JSON.stringify(Object.assign({ toRole: "perform"  }, snapshotFor(null)))); } catch (_) {}
+    try { cloudWs.send(JSON.stringify(Object.assign({ toRole: "audience" }, snapshotFor(null)))); } catch (_) {}
     performers.forEach(p => {
       if (p.kind !== "remote") return;
       try { cloudWs.send(JSON.stringify(Object.assign({ to: p.name }, snapshotFor(p.name)))); } catch (_) {}
     });
-    try { cloudWs.send(JSON.stringify(Object.assign({ toRole: "audience" }, snapshotFor(null)))); } catch (_) {}
   }
   // Repaint the monitor cellblock so name/roles/connection columns track
   // joins, leaves, and role changes. Sensor columns are repainted by
@@ -1188,6 +1201,14 @@ function handleCloudInbound(msg) {
     // The relay tells us when a remote conn joins / leaves the room.
     // Joins arrive without a name; we wait for the actual {type:"join"}
     // to come through (which carries the name).
+    if (msg.event === "join") {
+      // A fresh perform or audience connection just opened on the
+      // relay. Push the current state immediately so they don't have
+      // to wait for the next 2s tick — otherwise the join screen
+      // sits on "waiting for snapshot" for up to two seconds.
+      broadcastSnapshot();
+      if (msg.role === "audience") Max.outlet("audience", "join", "?");
+    }
     if (msg.event === "leave" && msg.role === "perform" && msg.name) {
       const p = performers.get(msg.name);
       if (p && p.kind === "remote") {
@@ -1198,9 +1219,6 @@ function handleCloudInbound(msg) {
     }
     if (msg.event === "leave" && msg.role === "audience") {
       Max.outlet("audience", "leave", msg.name || "?");
-    }
-    if (msg.event === "join" && msg.role === "audience") {
-      Max.outlet("audience", "join", "?");
     }
     return;
   }
