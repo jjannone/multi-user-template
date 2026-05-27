@@ -1,0 +1,39 @@
+name: Deploy public/ to GitHub Pages
+
+# Publishes the static client (public/) to GitHub Pages so phones and
+# audience can open it over HTTPS without the Max patch having to host
+# anything. The Max LAN server keeps serving the same public/ folder for
+# LAN-only shows; this is purely an additional way to reach the same UI.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deploy at a time; queue but don't cancel in-flight runs.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+      - id: deployment
+        uses: actions/deploy-pages@v4

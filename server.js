@@ -839,6 +839,10 @@ function startServer() {
   // Paint the monitor header row immediately so the operator sees the
   // grid before anyone has joined.
   pushMonitor();
+  // Same idea for the share URLs — emit the current placeholder text
+  // (or the live URL if cfg is already populated) so the comments fill
+  // in on first patcher open.
+  emitShareUrls();
 }
 
 function stopServer() {
@@ -1040,7 +1044,12 @@ let cloudClosing  = false;  // distinguish user-requested disconnect from drops
 const cloudCfg = {
   url:   "",                  // wss://mu-relay.<sub>.workers.dev
   piece: "multi-user-template",
-  room:  "main"
+  room:  "main",
+  // Static site base where the client (public/index.html) is hosted.
+  // Used to build the shareable performer / audience URLs. Default points
+  // at GitHub Pages for the template repo; derived repos should override
+  // via `setsitebase`.
+  siteBase: "https://jjannone.github.io/multi-user-template/"
 };
 
 function emitCloudStatus(text) {
@@ -1056,6 +1065,26 @@ function buildCloudWsUrl() {
   const piece   = encodeURIComponent(cloudCfg.piece);
   const room    = encodeURIComponent(cloudCfg.room);
   return `${trimmed}/mu/${piece}/${room}/host`;
+}
+
+// Shareable URLs that performers and audience open in their phone
+// browsers. Both reuse the same static index.html and select their role
+// via query params. We URL-encode the ws:// URL because it gets passed
+// verbatim through query-string handling.
+function emitShareUrls() {
+  if (!cloudCfg.url || !cloudCfg.piece || !cloudCfg.room || !cloudCfg.siteBase) {
+    Max.outlet("cloud", "performurl",  "(set Cloud URL, Piece, Room, Site base)");
+    Max.outlet("cloud", "audienceurl", "(set Cloud URL, Piece, Room, Site base)");
+    return;
+  }
+  const base    = cloudCfg.siteBase.replace(/\/+$/, "/");
+  const encoded = encodeURIComponent(cloudCfg.url);
+  const piece   = encodeURIComponent(cloudCfg.piece);
+  const room    = encodeURIComponent(cloudCfg.room);
+  const perform  = `${base}?cloud=${encoded}&piece=${piece}&room=${room}`;
+  const audience = `${base}?cloud=${encoded}&piece=${piece}&room=${room}&view=audience`;
+  Max.outlet("cloud", "performurl",  perform);
+  Max.outlet("cloud", "audienceurl", audience);
 }
 
 function cloudConnect() {
@@ -1229,6 +1258,7 @@ function handleRemotePerformInbound(msg) {
 Max.addHandler("setcloudurl", (...args) => {
   cloudCfg.url = args.map(String).join(" ").trim();
   Max.post(`cloud URL → ${cloudCfg.url || "(empty)"}`);
+  emitShareUrls();
 });
 Max.addHandler("setpiece", (...args) => {
   const s = args.map(String).join("-").trim();
@@ -1238,6 +1268,7 @@ Max.addHandler("setpiece", (...args) => {
   }
   cloudCfg.piece = s;
   Max.post(`piece → ${s}`);
+  emitShareUrls();
 });
 Max.addHandler("setroom", (...args) => {
   const s = args.map(String).join("-").trim() || "main";
@@ -1247,6 +1278,14 @@ Max.addHandler("setroom", (...args) => {
   }
   cloudCfg.room = s;
   Max.post(`room → ${s}`);
+  emitShareUrls();
+});
+Max.addHandler("setsitebase", (...args) => {
+  // Where the static index.html is hosted — typically a GitHub Pages URL
+  // like https://<user>.github.io/<repo>/. Trailing slash is normalized.
+  cloudCfg.siteBase = args.map(String).join(" ").trim();
+  Max.post(`site base → ${cloudCfg.siteBase || "(empty)"}`);
+  emitShareUrls();
 });
 Max.addHandler("cloudon",  () => cloudConnect());
 Max.addHandler("cloudoff", () => cloudDisconnect(false));

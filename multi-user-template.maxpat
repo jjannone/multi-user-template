@@ -1161,6 +1161,124 @@
 			},
 			{
 				"box" : 				{
+					"id" : "obj-c-sitebase-l",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 700.0, 444.0, 80.0, 20.0 ],
+					"text" : "Site base"
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-t-sitebase",
+					"maxclass" : "textedit",
+					"numinlets" : 1,
+					"numoutlets" : 4,
+					"outlettype" : [ "", "int", "", "" ],
+					"patching_rect" : [ 790.0, 442.0, 460.0, 26.0 ],
+					"parameter_enable" : 1,
+					"saved_attribute_attributes" : 					{
+						"valueof" : 						{
+							"parameter_longname" : "siteBase",
+							"parameter_shortname" : "siteBase",
+							"parameter_type" : 3,
+							"parameter_initial_enable" : 1,
+							"parameter_initial" : [ "https://jjannone.github.io/multi-user-template/" ]
+						}
+					},
+					"text" : "https://jjannone.github.io/multi-user-template/"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-p-sitebase",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 790.0, 472.0, 130.0, 22.0 ],
+					"text" : "prepend setsitebase"
+				}
+			},
+
+			{
+				"box" : 				{
+					"id" : "obj-c-perform-l",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 700.0, 504.0, 130.0, 20.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 20.0, 346.0, 130.0, 20.0 ],
+					"text" : "Performer URL:"
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-c-perform",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 700.0, 524.0, 600.0, 20.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 150.0, 346.0, 1100.0, 20.0 ],
+					"text" : "(set Cloud URL, Piece, Room, Site base)"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-p-perform",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 700.0, 548.0, 90.0, 22.0 ],
+					"text" : "prepend set"
+				}
+			},
+
+			{
+				"box" : 				{
+					"id" : "obj-c-audience-l",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 700.0, 580.0, 130.0, 20.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 20.0, 370.0, 130.0, 20.0 ],
+					"text" : "Audience URL:"
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-c-audience",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 700.0, 600.0, 600.0, 20.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 150.0, 370.0, 1100.0, 20.0 ],
+					"text" : "(set Cloud URL, Piece, Room, Site base)"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-p-audience",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 700.0, 624.0, 90.0, 22.0 ],
+					"text" : "prepend set"
+				}
+			},
+
+			{
+				"box" : 				{
 					"id" : "obj-cellblock",
 					"maxclass" : "jit.cellblock",
 					"numinlets" : 1,
@@ -1168,7 +1286,7 @@
 					"outlettype" : [ "", "", "" ],
 					"patching_rect" : [ 20.0, 860.0, 940.0, 360.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 360.0, 1240.0, 460.0 ],
+					"presentation_rect" : [ 20.0, 420.0, 1240.0, 460.0 ],
 					"rows" : 16,
 					"cols" : 16,
 					"colhead" : 0,
@@ -1190,7 +1308,7 @@
 					"numoutlets" : 0,
 					"patching_rect" : [ 20.0, 838.0, 940.0, 20.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 338.0, 600.0, 20.0 ],
+					"presentation_rect" : [ 20.0, 398.0, 600.0, 20.0 ],
 					"fontface" : 1,
 					"fontname" : "Courier",
 					"text" : "── MONITOR — latest data per performer ────────────────"
@@ -1237,10 +1355,10 @@
 					"id" : "obj-route-cloud",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
-					"numoutlets" : 3,
-					"outlettype" : [ "", "", "" ],
-					"patching_rect" : [ 700.0, 796.0, 200.0, 22.0 ],
-					"text" : "route status connected"
+					"numoutlets" : 5,
+					"outlettype" : [ "", "", "", "", "" ],
+					"patching_rect" : [ 700.0, 796.0, 360.0, 22.0 ],
+					"text" : "route status connected performurl audienceurl"
 				}
 			},
 			{
@@ -1326,7 +1444,16 @@
 			{ "patchline" : { "source" : [ "obj-p-cloud-status", 0 ], "destination" : [ "obj-c-cloud-status", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route-cloud",  1 ], "destination" : [ "obj-i-cloud-connected", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route",        8 ], "destination" : [ "obj-print-audience", 0 ] } },
-			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock", 0 ], "hidden" : 1 } }
+			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock", 0 ], "hidden" : 1 } },
+
+			{ "patchline" : { "source" : [ "obj-t-sitebase",      0 ], "destination" : [ "obj-p-sitebase",  0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-p-sitebase",      0 ], "destination" : [ "obj-node",        0 ], "hidden" : 1 } },
+
+			{ "patchline" : { "source" : [ "obj-route-cloud",     2 ], "destination" : [ "obj-p-perform",   0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-p-perform",       0 ], "destination" : [ "obj-c-perform",   0 ], "hidden" : 1 } },
+
+			{ "patchline" : { "source" : [ "obj-route-cloud",     3 ], "destination" : [ "obj-p-audience",  0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-p-audience",      0 ], "destination" : [ "obj-c-audience",  0 ], "hidden" : 1 } }
 		]
 	}
 }
