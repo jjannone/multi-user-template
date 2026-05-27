@@ -321,6 +321,36 @@ Keep `<piece>` consistent between the patch and the URLs — there is no
 discovery mechanism; if they don't match, performers join different DOs
 and never see each other.
 
+### Monitor cellblock — coalesce repaints, never tick per-event
+
+Every sensor update calls `recordSensor(name, kind, summary)` which writes
+into `performers[name].lastSensors[kind]` and schedules `pushMonitor()`
+through `schedMonitor()`. The scheduler debounces to ~4 Hz — without it,
+a 16 Hz motion stream from ten performers would fire 160 cell-rewrites
+per second at Max, which is visible flicker (cellblock repaint isn't
+free) and burns CPU for no benefit. **Add a `recordSensor` call inside
+every new sensor case AND a matching column** in `MONITOR_COLS` — if you
+add one without the other, the column exists but never updates.
+
+The cellblock itself is `selmode: 0` (display-only), matching the
+Claude2Max rule: never reset selmode silently when the operator might
+have configured it. Resize via the `rows N` / `cols N` / `clear`
+prefix before the per-cell `set` calls so the grid matches the current
+performer count exactly.
+
+### Presentation view is the operator's surface; patching view is for editing
+
+The patch opens in presentation (`openinpresentation: 1`) and the
+presentation is laid out for a running performance: server status row,
+transport, cloud connect controls, the monitor cellblock. Output
+preset message boxes stay in the patching view — they're test
+affordances, not performance controls.
+
+Derived repos inheriting the template should preserve this split: keep
+adding presentation positions for any new UI control you introduce
+(per the Claude2Max binding rule), and leave routers / formatters /
+print objects out of the presentation entirely.
+
 ## Possible future work
 
 * **Internet relay via Cloudflare Workers + Durable Objects.** Port

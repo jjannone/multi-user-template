@@ -102,8 +102,86 @@ function freshPerformer(name) {
     // "lan"    — joined over the LAN HTTP+WS server (this same process)
     // "remote" — joined via the cloud relay (no direct ws here; messages
     //            are bridged through cloudWs by `to: <name>`)
-    kind:      "lan"
+    kind:      "lan",
+    // Per-kind summary of the latest sensor sample, used to populate the
+    // monitor cellblock without re-deriving from history. Each entry is a
+    // short pre-formatted string ready to drop into a cell.
+    lastSensors:    {},
+    lastSensorTime: 0
   };
+}
+
+// One column per data stream we want the patch operator to see at a
+// glance. Order is fixed; pushMonitor writes one row per performer using
+// these indices. Add a column here AND a corresponding update inside
+// handleSensor's case for that kind.
+const MONITOR_COLS = [
+  "Name", "Conn", "Roles",
+  "Motion", "Orient", "Head",
+  "Geo", "Mic", "Touch",
+  "Btn", "Slid", "Dial", "MIDI",
+  "Batt", "Speech", "Upd"
+];
+
+function recordSensor(name, kind, summary) {
+  const p = performers.get(name);
+  if (!p) return;
+  p.lastSensors[kind]  = String(summary).slice(0, 64);
+  p.lastSensorTime     = Date.now();
+  schedMonitor();
+}
+
+let monitorPending = false;
+function schedMonitor() {
+  // Coalesce rapid sensor updates into one cellblock repaint at ~4 Hz.
+  // Without this, a 16 Hz motion stream from 10 performers fires 160
+  // cell-rewrites per second at Max — visible flicker AND wasted work.
+  if (monitorPending) return;
+  monitorPending = true;
+  setTimeout(() => { monitorPending = false; pushMonitor(); }, 250);
+}
+
+function pushMonitor() {
+  const names = Array.from(performers.keys());
+  const rows  = names.length + 1;   // +1 header
+  Max.outlet("monitor", "rows", rows);
+  Max.outlet("monitor", "cols", MONITOR_COLS.length);
+  Max.outlet("monitor", "clear");
+  // Column widths — Name and Roles get more room; everything else equal.
+  Max.outlet("monitor", "col", 0, "width", 110);
+  Max.outlet("monitor", "col", 1, "width", 56);
+  Max.outlet("monitor", "col", 2, "width", 100);
+  for (let c = 3; c < MONITOR_COLS.length; c++) {
+    Max.outlet("monitor", "col", c, "width", 70);
+  }
+  // Header row.
+  MONITOR_COLS.forEach((label, c) => Max.outlet("monitor", "set", c, 0, label));
+  // Data rows.
+  const now = Date.now();
+  names.forEach((n, i) => {
+    const p   = performers.get(n);
+    const r   = i + 1;
+    const ls  = p.lastSensors || {};
+    const conn = !p.connected ? "off" : (p.kind === "remote" ? "remote" : "lan");
+    const roles = Array.from(p.roles).join(",") || "—";
+    const upd   = p.lastSensorTime ? `${Math.round((now - p.lastSensorTime) / 100) / 10}s` : "";
+    Max.outlet("monitor", "set",  0, r, n);
+    Max.outlet("monitor", "set",  1, r, conn);
+    Max.outlet("monitor", "set",  2, r, roles);
+    Max.outlet("monitor", "set",  3, r, ls.motion   || "");
+    Max.outlet("monitor", "set",  4, r, ls.orient   || "");
+    Max.outlet("monitor", "set",  5, r, ls.heading  || "");
+    Max.outlet("monitor", "set",  6, r, ls.geo      || "");
+    Max.outlet("monitor", "set",  7, r, ls.mic      || "");
+    Max.outlet("monitor", "set",  8, r, ls.touch    || "");
+    Max.outlet("monitor", "set",  9, r, ls.button   || "");
+    Max.outlet("monitor", "set", 10, r, ls.slider   || "");
+    Max.outlet("monitor", "set", 11, r, ls.dial     || "");
+    Max.outlet("monitor", "set", 12, r, ls.midi     || "");
+    Max.outlet("monitor", "set", 13, r, ls.battery  || "");
+    Max.outlet("monitor", "set", 14, r, ls.speech   || "");
+    Max.outlet("monitor", "set", 15, r, upd);
+  });
 }
 
 // Transport: false = lobby; true = piece running. No count-in here — the
@@ -344,6 +422,7 @@ function handleSensor(name, msg) {
       const ax = numOr0(msg.ax), ay = numOr0(msg.ay), az = numOr0(msg.az);
       Max.outlet("sensor", name, "motion", ax, ay, az);
       sendOsc(`/user/${safe}/motion`, [ax, ay, az]);
+      recordSensor(name, "motion", `${ax.toFixed(1)} ${ay.toFixed(1)} ${az.toFixed(1)}`);
       break;
     }
     case "gyro": {
@@ -356,12 +435,14 @@ function handleSensor(name, msg) {
       const a = numOr0(msg.alpha), b = numOr0(msg.beta), g = numOr0(msg.gamma);
       Max.outlet("sensor", name, "orient", a, b, g);
       sendOsc(`/user/${safe}/orient`, [a, b, g]);
+      recordSensor(name, "orient", `${a.toFixed(0)} ${b.toFixed(0)} ${g.toFixed(0)}`);
       break;
     }
     case "heading": {
       const h = numOr0(msg.heading);
       Max.outlet("sensor", name, "heading", h);
       sendOsc(`/user/${safe}/heading`, [h]);
+      recordSensor(name, "heading", h.toFixed(1));
       break;
     }
     case "geo": {
@@ -369,12 +450,14 @@ function handleSensor(name, msg) {
       const alt = numOr0(msg.alt), acc = numOr0(msg.accuracy);
       Max.outlet("sensor", name, "geo", lat, lon, alt, acc);
       sendOsc(`/user/${safe}/geo`, [lat, lon, alt, acc]);
+      recordSensor(name, "geo", `${lat.toFixed(3)},${lon.toFixed(3)}`);
       break;
     }
     case "mic": {
       const level = numOr0(msg.level), peak = numOr0(msg.peak);
       Max.outlet("sensor", name, "mic", level, peak);
       sendOsc(`/user/${safe}/mic`, [level, peak]);
+      recordSensor(name, "mic", `${level.toFixed(2)}/${peak.toFixed(2)}`);
       break;
     }
     case "touch": {
@@ -387,6 +470,7 @@ function handleSensor(name, msg) {
         Max.outlet("sensor", name, "touch", i, x, y, f);
         sendOsc(`/user/${safe}/touch/${i}`, [x, y, f]);
       });
+      recordSensor(name, "touch", `${touches.length}`);
       break;
     }
     case "battery": {
@@ -394,6 +478,7 @@ function handleSensor(name, msg) {
       const charging = msg.charging ? 1 : 0;
       Max.outlet("sensor", name, "battery", level, charging);
       sendOsc(`/user/${safe}/battery`, [level, charging]);
+      recordSensor(name, "battery", `${Math.round(level * 100)}%${charging ? "+" : ""}`);
       break;
     }
     case "net": {
@@ -472,6 +557,7 @@ function handleSensor(name, msg) {
       const final = msg.final ? 1 : 0;
       Max.outlet("sensor", name, "speech", text, final);
       sendOsc(`/user/${safe}/speech`, [text, final]);
+      recordSensor(name, "speech", text.slice(0, 32));
       break;
     }
     case "button": {
@@ -481,6 +567,7 @@ function handleSensor(name, msg) {
       const value = msg.value ? 1 : 0;
       Max.outlet("sensor", name, "button", id, value);
       sendOsc(`/user/${safe}/button/${id}`, [value]);
+      recordSensor(name, "button", `${id}:${value}`);
       break;
     }
     case "slider": {
@@ -488,6 +575,7 @@ function handleSensor(name, msg) {
       const value = numOr0(msg.value);
       Max.outlet("sensor", name, "slider", id, value);
       sendOsc(`/user/${safe}/slider/${id}`, [value]);
+      recordSensor(name, "slider", `${id}:${value.toFixed(2)}`);
       break;
     }
     case "dial": {
@@ -495,6 +583,7 @@ function handleSensor(name, msg) {
       const value = numOr0(msg.value);
       Max.outlet("sensor", name, "dial", id, value);
       sendOsc(`/user/${safe}/dial/${id}`, [value]);
+      recordSensor(name, "dial", `${id}:${value.toFixed(2)}`);
       break;
     }
     case "key": {
@@ -525,6 +614,7 @@ function handleSensor(name, msg) {
       if (event === "noteon" || event === "noteoff") {
         Max.outlet("sensor", name, "midi", event, note, vel, channel);
         sendOsc(`/user/${safe}/midi/${event}`, [note, vel, channel]);
+        recordSensor(name, "midi", `${event === "noteon" ? "on" : "off"} ${note}`);
       } else if (event === "cc") {
         Max.outlet("sensor", name, "midi", "cc", cc, value, channel);
         sendOsc(`/user/${safe}/midi/cc`, [cc, value, channel]);
@@ -690,6 +780,10 @@ function broadcastSnapshot() {
     });
     try { cloudWs.send(JSON.stringify(Object.assign({ toRole: "audience" }, snapshotFor(null)))); } catch (_) {}
   }
+  // Repaint the monitor cellblock so name/roles/connection columns track
+  // joins, leaves, and role changes. Sensor columns are repainted by
+  // recordSensor independently — the schedMonitor coalesces both.
+  schedMonitor();
 }
 
 // ── transport ──────────────────────────────────────────────────
@@ -742,6 +836,9 @@ function startServer() {
   tickTimer      = setInterval(tick,      2000);
   heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
   startOsc();
+  // Paint the monitor header row immediately so the operator sees the
+  // grid before anyone has joined.
+  pushMonitor();
 }
 
 function stopServer() {
