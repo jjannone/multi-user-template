@@ -79,7 +79,12 @@ const cfg = {
   oscPort:     7400,
   password:    "",                          // admin password — empty disables admin
   roles:       ["role1", "role2", "role3"], // non-admin roles; admin is implicit
-  tickMs:      1000
+  tickMs:      1000,
+  // Per-column visibility for the Monitor cellblock. The patch's Detail
+  // panel has a toggle per column wired to `setmoncol <name> 0|1`. Cols
+  // marked false are dropped from the rendered grid. Name is always kept
+  // implicitly so the operator can still identify rows.
+  monitorCols: {}
 };
 
 const ADMIN_ROLE = "admin";
@@ -115,12 +120,27 @@ function freshPerformer(name) {
 // glance. Order is fixed; pushMonitor writes one row per performer using
 // these indices. Add a column here AND a corresponding update inside
 // handleSensor's case for that kind.
+// Columns are listed here as (label, getter). The getter takes the
+// performer record + a tick-relative now and returns the cell string.
+// Order is the canonical column order; the Monitor cellblock and the
+// Detail panel's per-column toggle UI iterate this same list.
 const MONITOR_COLS = [
-  "Name", "Conn", "Roles",
-  "Motion", "Orient", "Head",
-  "Geo", "Mic", "Touch",
-  "Btn", "Slid", "Dial", "MIDI",
-  "Batt", "Speech", "Upd"
+  { label: "Name",   width: 110, get: (p, n) => p.connected ? p.name : p.name + " *" },
+  { label: "Conn",   width: 56,  get: (p)    => !p.connected ? "off" : (p.kind === "remote" ? "remote" : "lan") },
+  { label: "Roles",  width: 100, get: (p)    => Array.from(p.roles).join(",") || "—" },
+  { label: "Motion", width: 70,  get: (p)    => p.lastSensors.motion   || "" },
+  { label: "Orient", width: 70,  get: (p)    => p.lastSensors.orient   || "" },
+  { label: "Head",   width: 70,  get: (p)    => p.lastSensors.heading  || "" },
+  { label: "Geo",    width: 70,  get: (p)    => p.lastSensors.geo      || "" },
+  { label: "Mic",    width: 70,  get: (p)    => p.lastSensors.mic      || "" },
+  { label: "Touch",  width: 70,  get: (p)    => p.lastSensors.touch    || "" },
+  { label: "Btn",    width: 70,  get: (p)    => p.lastSensors.button   || "" },
+  { label: "Slid",   width: 70,  get: (p)    => p.lastSensors.slider   || "" },
+  { label: "Dial",   width: 70,  get: (p)    => p.lastSensors.dial     || "" },
+  { label: "MIDI",   width: 70,  get: (p)    => p.lastSensors.midi     || "" },
+  { label: "Batt",   width: 70,  get: (p)    => p.lastSensors.battery  || "" },
+  { label: "Speech", width: 70,  get: (p)    => p.lastSensors.speech   || "" },
+  { label: "Upd",    width: 70,  get: (p, n) => p.lastSensorTime ? `${Math.round((n - p.lastSensorTime) / 100) / 10}s` : "" }
 ];
 
 function recordSensor(name, kind, summary) {
@@ -129,6 +149,62 @@ function recordSensor(name, kind, summary) {
   p.lastSensors[kind]  = String(summary).slice(0, 64);
   p.lastSensorTime     = Date.now();
   schedMonitor();
+  // Focus path — when this performer is the currently selected detail
+  // target, update the corresponding row of the Detail cellblock so
+  // the operator sees the value live without per-kind routing in the
+  // patch graph.
+  if (name === focusName) {
+    const r = DETAIL_KIND_ROW[kind];
+    if (r !== undefined) Max.outlet("detail", "set", 1, r, p.lastSensors[kind]);
+  }
+}
+
+// Detail panel uses a second jit.cellblock whose rows are sensor kinds
+// (one per stream the template knows about) and whose columns are
+// [Kind, Value]. The patch wires:
+//   [route detail] → [jit.cellblock obj-detail-cellblock]
+// matching the Monitor wiring. Adding a new sensor kind means:
+//   • adding a recordSensor call to its case in handleSensor (so the
+//     summary string lands in p.lastSensors[kind])
+//   • adding the kind to DETAIL_KINDS below (so the Detail cellblock
+//     has a row for it).
+// The row index lookup is precomputed for the hot-path emit.
+const DETAIL_KINDS = [
+  "motion", "gyro", "orient", "heading",
+  "gravity", "linaccel", "magnet",
+  "geo", "mic", "speech",
+  "touch", "pointer", "gamepad",
+  "button", "slider", "dial", "key", "text", "midi",
+  "battery", "net", "light", "pressure", "proximity", "screen"
+];
+const DETAIL_KIND_ROW = {};
+DETAIL_KINDS.forEach((k, i) => { DETAIL_KIND_ROW[k] = i + 1; }); // +1 for header
+
+function pushDetailLayout() {
+  // Build the kind column once. Values are filled by pushDetailValues
+  // (on focus change) and by recordSensor (on individual updates).
+  Max.outlet("detail", "rows", DETAIL_KINDS.length + 1);
+  Max.outlet("detail", "cols", 2);
+  Max.outlet("detail", "clear");
+  Max.outlet("detail", "col", 0, "width", 90);
+  Max.outlet("detail", "col", 1, "width", 380);
+  Max.outlet("detail", "set", 0, 0, "Kind");
+  Max.outlet("detail", "set", 1, 0, "Value");
+  DETAIL_KINDS.forEach((kind, i) => {
+    Max.outlet("detail", "set", 0, i + 1, kind);
+  });
+}
+
+function pushDetailValues() {
+  if (!focusName) {
+    DETAIL_KINDS.forEach((kind, i) => Max.outlet("detail", "set", 1, i + 1, ""));
+    return;
+  }
+  const p = performers.get(focusName);
+  if (!p) return;
+  DETAIL_KINDS.forEach((kind, i) => {
+    Max.outlet("detail", "set", 1, i + 1, p.lastSensors[kind] || "");
+  });
 }
 
 let monitorPending = false;
@@ -141,52 +217,56 @@ function schedMonitor() {
   setTimeout(() => { monitorPending = false; pushMonitor(); }, 250);
 }
 
+// Per-render index of cellblock-row → performer name so the cellclick
+// handler can map a click back to a name. Recomputed inside pushMonitor;
+// the cellclick row index matches this array's order. (Name is also
+// stored in column 0, but going through this lookup avoids parsing the
+// asterisk we append to disconnected names.)
+let visibleRowToName = [];
+
+function isColVisible(label) {
+  // Name is always shown — without it the operator can't identify rows.
+  if (label === "Name") return true;
+  // Default visible unless explicitly toggled off via setmoncol.
+  return cfg.monitorCols[label] !== false;
+}
+
 function pushMonitor() {
-  const names = Array.from(performers.keys());
-  const rows  = names.length + 1;   // +1 header
+  const names    = Array.from(performers.keys());
+  const visCols  = MONITOR_COLS.filter(c => isColVisible(c.label));
+  const rows     = names.length + 1; // +1 header
   Max.outlet("monitor", "rows", rows);
-  Max.outlet("monitor", "cols", MONITOR_COLS.length);
+  Max.outlet("monitor", "cols", visCols.length);
   Max.outlet("monitor", "clear");
-  // Column widths — Name and Roles get more room; everything else equal.
-  Max.outlet("monitor", "col", 0, "width", 110);
-  Max.outlet("monitor", "col", 1, "width", 56);
-  Max.outlet("monitor", "col", 2, "width", 100);
-  for (let c = 3; c < MONITOR_COLS.length; c++) {
-    Max.outlet("monitor", "col", c, "width", 70);
-  }
-  // Header row.
-  MONITOR_COLS.forEach((label, c) => Max.outlet("monitor", "set", c, 0, label));
-  // Data rows.
+  visCols.forEach((col, c) => {
+    Max.outlet("monitor", "col", c, "width", col.width);
+    Max.outlet("monitor", "set", c, 0, col.label);
+  });
   const now = Date.now();
+  visibleRowToName = [];
   names.forEach((n, i) => {
-    const p   = performers.get(n);
-    const r   = i + 1;
-    const ls  = p.lastSensors || {};
-    const conn = !p.connected ? "off" : (p.kind === "remote" ? "remote" : "lan");
-    const roles = Array.from(p.roles).join(",") || "—";
-    const upd   = p.lastSensorTime ? `${Math.round((now - p.lastSensorTime) / 100) / 10}s` : "";
-    Max.outlet("monitor", "set",  0, r, n);
-    Max.outlet("monitor", "set",  1, r, conn);
-    Max.outlet("monitor", "set",  2, r, roles);
-    Max.outlet("monitor", "set",  3, r, ls.motion   || "");
-    Max.outlet("monitor", "set",  4, r, ls.orient   || "");
-    Max.outlet("monitor", "set",  5, r, ls.heading  || "");
-    Max.outlet("monitor", "set",  6, r, ls.geo      || "");
-    Max.outlet("monitor", "set",  7, r, ls.mic      || "");
-    Max.outlet("monitor", "set",  8, r, ls.touch    || "");
-    Max.outlet("monitor", "set",  9, r, ls.button   || "");
-    Max.outlet("monitor", "set", 10, r, ls.slider   || "");
-    Max.outlet("monitor", "set", 11, r, ls.dial     || "");
-    Max.outlet("monitor", "set", 12, r, ls.midi     || "");
-    Max.outlet("monitor", "set", 13, r, ls.battery  || "");
-    Max.outlet("monitor", "set", 14, r, ls.speech   || "");
-    Max.outlet("monitor", "set", 15, r, upd);
+    const p = performers.get(n);
+    const r = i + 1;
+    visibleRowToName.push(n);
+    visCols.forEach((col, c) => {
+      const v = col.get(p, now);
+      Max.outlet("monitor", "set", c, r, v);
+    });
   });
 }
 
 // Transport: false = lobby; true = piece running. No count-in here — the
 // template stays minimal; pieces that want one can layer it in Max.
 let started = false;
+
+// Which performer's data is currently being detailed in the patch's
+// Detail panel. Set by:
+//   - cellclick handler (row → name lookup from the live performers map)
+//   - explicit setfocus handler (Max can set this manually too)
+// Cleared on `clear`. While set, every sensor message FROM this name is
+// also emitted through the "focus" outlet so the detail panel can update
+// live without filtering at the patch side.
+let focusName = null;
 
 // Heartbeat keeps us honest about who is actually connected. ws.on("close")
 // only fires on a clean TCP close; a phone in airplane mode or with a hung
@@ -486,12 +566,14 @@ function handleSensor(name, msg) {
       const down = numOr0(msg.downlink);
       Max.outlet("sensor", name, "net", type, down);
       sendOsc(`/user/${safe}/net`, [type, down]);
+      recordSensor(name, "net", `${type} ${down}`);
       break;
     }
     case "light": {
       const lux = numOr0(msg.lux);
       Max.outlet("sensor", name, "light", lux);
       sendOsc(`/user/${safe}/light`, [lux]);
+      recordSensor(name, "light", `${lux} lx`);
       break;
     }
     case "pointer": {
@@ -501,6 +583,7 @@ function handleSensor(name, msg) {
       const type = String(msg.ptype || "touch"); // touch|pen|mouse
       Max.outlet("sensor", name, "pointer", x, y, pr, tx, ty, type);
       sendOsc(`/user/${safe}/pointer`, [x, y, pr, tx, ty, type]);
+      recordSensor(name, "pointer", `${type} ${x.toFixed(2)},${y.toFixed(2)} p${pr.toFixed(2)}`);
       break;
     }
     case "gamepad": {
@@ -512,36 +595,42 @@ function handleSensor(name, msg) {
       // for routing convenience.
       Max.outlet.apply(Max, ["sensor", name, "gamepad", "axes"].concat(axes.map(numOr0)));
       Max.outlet.apply(Max, ["sensor", name, "gamepad", "buttons"].concat(buttons.map(numOr0)));
+      recordSensor(name, "gamepad", `${axes.length}a/${buttons.length}b`);
       break;
     }
     case "gravity": {
       const gx = numOr0(msg.gx), gy = numOr0(msg.gy), gz = numOr0(msg.gz);
       Max.outlet("sensor", name, "gravity", gx, gy, gz);
       sendOsc(`/user/${safe}/gravity`, [gx, gy, gz]);
+      recordSensor(name, "gravity", `${gx.toFixed(1)} ${gy.toFixed(1)} ${gz.toFixed(1)}`);
       break;
     }
     case "linaccel": {
       const ax = numOr0(msg.ax), ay = numOr0(msg.ay), az = numOr0(msg.az);
       Max.outlet("sensor", name, "linaccel", ax, ay, az);
       sendOsc(`/user/${safe}/linaccel`, [ax, ay, az]);
+      recordSensor(name, "linaccel", `${ax.toFixed(1)} ${ay.toFixed(1)} ${az.toFixed(1)}`);
       break;
     }
     case "magnet": {
       const mx = numOr0(msg.mx), my = numOr0(msg.my), mz = numOr0(msg.mz);
       Max.outlet("sensor", name, "magnet", mx, my, mz);
       sendOsc(`/user/${safe}/magnet`, [mx, my, mz]);
+      recordSensor(name, "magnet", `${mx.toFixed(1)} ${my.toFixed(1)} ${mz.toFixed(1)}`);
       break;
     }
     case "pressure": {
       const hpa = numOr0(msg.hpa);
       Max.outlet("sensor", name, "pressure", hpa);
       sendOsc(`/user/${safe}/pressure`, [hpa]);
+      recordSensor(name, "pressure", `${hpa.toFixed(1)} hPa`);
       break;
     }
     case "proximity": {
       const dist = numOr0(msg.dist), max = numOr0(msg.max);
       Max.outlet("sensor", name, "proximity", dist, max);
       sendOsc(`/user/${safe}/proximity`, [dist, max]);
+      recordSensor(name, "proximity", `${dist}/${max}`);
       break;
     }
     case "screen": {
@@ -550,6 +639,7 @@ function handleSensor(name, msg) {
       const fullscreen = msg.fullscreen ? 1 : 0;
       Max.outlet("sensor", name, "screen", orientation, visible, fullscreen);
       sendOsc(`/user/${safe}/screen`, [orientation, visible, fullscreen]);
+      recordSensor(name, "screen", `${orientation}${visible ? "" : " hidden"}${fullscreen ? " fs" : ""}`);
       break;
     }
     case "speech": {
@@ -593,6 +683,7 @@ function handleSensor(name, msg) {
       const code = String(msg.code || "");
       Max.outlet("sensor", name, "key", ch, code);
       sendOsc(`/user/${safe}/key`, [ch, code]);
+      recordSensor(name, "key", code || ch);
       break;
     }
     case "text": {
@@ -600,6 +691,7 @@ function handleSensor(name, msg) {
       const text = String(msg.text || "");
       Max.outlet("sensor", name, "text", text);
       sendOsc(`/user/${safe}/text`, [text]);
+      recordSensor(name, "text", text.slice(0, 32));
       break;
     }
     case "midi": {
@@ -675,6 +767,12 @@ function removePerformer(name) {
   Max.outlet("performer", "remove", name);
   sendRoster();
   emitAdminCount();
+  // If we just removed the focused performer, clear focus so the
+  // Detail panel doesn't sit on stale data.
+  if (focusName === name) {
+    focusName = null;
+    Max.outlet("focus", "name", "(none)");
+  }
 }
 
 function applyRoles(name, wantedRoles, password) {
@@ -864,9 +962,11 @@ function startServer() {
   tickTimer      = setInterval(tick,      2000);
   heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
   startOsc();
-  // Paint the monitor header row immediately so the operator sees the
-  // grid before anyone has joined.
+  // Paint the monitor + detail cellblock layouts immediately so the
+  // operator sees both grids before anyone has joined.
   pushMonitor();
+  pushDetailLayout();
+  emitFocusAll();
   // Same idea for the share URLs — emit the current placeholder text
   // (or the live URL if cfg is already populated) so the comments fill
   // in on first patcher open.
@@ -1048,16 +1148,76 @@ Max.addHandler("clear", () => {
   sockets.forEach((ws) => { try { ws.close(); } catch (_) {} });
   sockets.clear();
   started = false;
+  focusName = null;
   Max.outlet("started", 0);
+  Max.outlet("focus", "name", "(none)");
   sendRoster();
   emitAdminCount();
+  pushMonitor(); // refresh empty grid + visibleRowToName
   Max.outlet("status", "Cleared — everyone kicked");
-  // Don't auto-broadcast — there's nobody to broadcast to.
 });
 
 Max.addHandler("ip",     () => Max.outlet("url", publicUrl()));
 Max.addHandler("status", () => Max.outlet("status",
   `${performers.size} performers, ${started ? "running" : "lobby"}`));
+
+// ── Detail panel focus + column visibility ──────────────────────
+
+function emitFocusName() {
+  Max.outlet("focus", "name", focusName || "(none)");
+}
+function emitFocusAll() {
+  emitFocusName();
+  if (!focusName) {
+    Max.outlet("focus", "roles",   "—");
+    Max.outlet("focus", "isadmin", 0);
+    Max.outlet("focus", "conn",    "—");
+    pushDetailValues(); // clears all value cells
+    return;
+  }
+  const p = performers.get(focusName);
+  if (!p) return;
+  Max.outlet("focus", "roles",   Array.from(p.roles).join(",") || "—");
+  Max.outlet("focus", "isadmin", p.isAdmin ? 1 : 0);
+  Max.outlet("focus", "conn",    !p.connected ? "off" : (p.kind === "remote" ? "remote" : "lan"));
+  pushDetailValues();
+}
+
+// Cellblock cell-click handler. The patch wires:
+//   [jit.cellblock] outlet 0 → [prepend cellclick] → [node.script]
+// emitting `cellclick <col> <row> <value>`. Row 0 is the header — skip
+// it; rows 1..N map to the same order as visibleRowToName from the most
+// recent pushMonitor call.
+Max.addHandler("cellclick", (col, row /*, value*/) => {
+  const r = Number(row);
+  if (r < 1) return;
+  const idx = r - 1;
+  if (idx >= visibleRowToName.length) return;
+  focusName = visibleRowToName[idx];
+  emitFocusAll();
+});
+
+// Explicit programmatic focus, in case a piece wants to drive it from
+// somewhere other than a cell click (e.g. round-robin auto-focus).
+Max.addHandler("setfocus", (...args) => {
+  args = teArgs(args);
+  const s = args.map(String).join(" ").trim();
+  focusName = s || null;
+  emitFocusAll();
+});
+Max.addHandler("clearfocus", () => {
+  focusName = null;
+  emitFocusName();
+});
+
+// Column visibility for the Monitor cellblock. The Detail panel has one
+// live.toggle per column wired to `setmoncol <label> $1`. Setting `0`
+// drops the column from the rendered grid; setting `1` (or omitting it)
+// restores it. The "Name" column is always rendered regardless.
+Max.addHandler("setmoncol", (label, on) => {
+  cfg.monitorCols[String(label)] = !!Number(on);
+  pushMonitor();
+});
 
 // ── cloud bridge (Max ↔ shared CF Worker relay) ─────────────────
 //
@@ -1324,6 +1484,11 @@ function handleRemotePerformInbound(msg) {
     const p = performers.get(name);
     if (p && p.isAdmin) stopPiece();
   }
+  // Match the LAN handleClientMessage path: push a snapshot after any
+  // state-changing message so the client's UI (isAdmin → START button,
+  // role chips in roster, etc.) updates immediately instead of waiting
+  // up to 2s for the next tick.
+  broadcastSnapshot();
 }
 
 // ── Max handlers for the cloud bridge ───────────────────────────

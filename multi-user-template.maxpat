@@ -669,10 +669,10 @@
 					"id" : "obj-route",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
-					"numoutlets" : 11,
-					"outlettype" : [ "", "", "", "", "", "", "", "", "", "", "" ],
-					"patching_rect" : [ 20.0, 796.0, 640.0, 22.0 ],
-					"text" : "route performer roster status url started admincount sensor cloud audience monitor"
+					"numoutlets" : 13,
+					"outlettype" : [ "", "", "", "", "", "", "", "", "", "", "", "", "" ],
+					"patching_rect" : [ 20.0, 796.0, 720.0, 22.0 ],
+					"text" : "route performer roster status url started admincount sensor cloud audience monitor focus detail"
 				}
 			},
 			{
@@ -1168,18 +1168,103 @@
 					"outlettype" : [ "", "", "" ],
 					"patching_rect" : [ 20.0, 860.0, 940.0, 360.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 420.0, 1240.0, 460.0 ],
+					"presentation_rect" : [ 20.0, 420.0, 800.0, 460.0 ],
 					"rows" : 16,
 					"cols" : 16,
 					"colhead" : 0,
 					"rowhead" : 0,
 					"hscroll" : 1,
 					"vscroll" : 1,
+					"selmode" : 1,
+					"bgcolor" : [ 0.1, 0.1, 0.1, 1.0 ],
+					"fgcolor" : [ 0.92, 0.92, 0.92, 1.0 ],
+					"bordercolor" : [ 0.16, 0.16, 0.16, 1.0 ],
+					"gridlinecolor" : [ 0.18, 0.18, 0.18, 1.0 ]
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-detail-cellblock",
+					"maxclass" : "jit.cellblock",
+					"numinlets" : 1,
+					"numoutlets" : 3,
+					"outlettype" : [ "", "", "" ],
+					"patching_rect" : [ 980.0, 860.0, 480.0, 360.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 840.0, 440.0, 480.0, 400.0 ],
+					"rows" : 26,
+					"cols" : 2,
+					"colhead" : 0,
+					"rowhead" : 0,
+					"hscroll" : 0,
+					"vscroll" : 1,
 					"selmode" : 0,
 					"bgcolor" : [ 0.1, 0.1, 0.1, 1.0 ],
 					"fgcolor" : [ 0.92, 0.92, 0.92, 1.0 ],
 					"bordercolor" : [ 0.16, 0.16, 0.16, 1.0 ],
 					"gridlinecolor" : [ 0.18, 0.18, 0.18, 1.0 ]
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-c-detail-h",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 980.0, 838.0, 480.0, 20.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 840.0, 398.0, 220.0, 20.0 ],
+					"fontface" : 1,
+					"fontname" : "Courier",
+					"text" : "── DETAIL ──────────"
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-c-focus-name",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 980.0, 816.0, 480.0, 20.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 840.0, 418.0, 480.0, 20.0 ],
+					"text" : "(click a row in the Monitor to focus)"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-route-focus",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 5,
+					"outlettype" : [ "", "", "", "", "" ],
+					"patching_rect" : [ 660.0, 826.0, 280.0, 22.0 ],
+					"text" : "route name roles isadmin conn"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-p-focus-name",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 660.0, 850.0, 110.0, 22.0 ],
+					"text" : "prepend set"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-p-cellclick",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 20.0, 1230.0, 130.0, 22.0 ],
+					"text" : "prepend cellclick"
 				}
 			},
 			{
@@ -1320,7 +1405,13 @@
 			{ "patchline" : { "source" : [ "obj-p-cloud-status", 0 ], "destination" : [ "obj-c-cloud-status", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route-cloud",  1 ], "destination" : [ "obj-i-cloud-connected", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route",        8 ], "destination" : [ "obj-print-audience", 0 ] } },
-			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock",        0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-route",       11 ], "destination" : [ "obj-route-focus",      0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-route",       12 ], "destination" : [ "obj-detail-cellblock", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-route-focus",  0 ], "destination" : [ "obj-p-focus-name",     0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-p-focus-name", 0 ], "destination" : [ "obj-c-focus-name",     0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-cellblock",    0 ], "destination" : [ "obj-p-cellclick",      0 ] } },
+			{ "patchline" : { "source" : [ "obj-p-cellclick",  0 ], "destination" : [ "obj-node",             0 ], "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-loadbang",   0 ], "destination" : [ "obj-delay-init", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-def-piece",    0 ], "hidden" : 1 } },
