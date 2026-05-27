@@ -268,6 +268,12 @@ let started = false;
 // live without filtering at the patch side.
 let focusName = null;
 
+// Rolling history of the focused performer's mic level samples, fed to
+// the Detail panel's waveform multislider. Length matches the
+// multislider's `size` attr in the patch. Reset on focus change.
+const FOCUS_WAVE_LEN = 128;
+let focusWaveform = new Array(FOCUS_WAVE_LEN).fill(0);
+
 // Heartbeat keeps us honest about who is actually connected. ws.on("close")
 // only fires on a clean TCP close; a phone in airplane mode or with a hung
 // network stack leaves the server-side socket "open" forever without this.
@@ -538,6 +544,14 @@ function handleSensor(name, msg) {
       Max.outlet("sensor", name, "mic", level, peak);
       sendOsc(`/user/${safe}/mic`, [level, peak]);
       recordSensor(name, "mic", `${level.toFixed(2)}/${peak.toFixed(2)}`);
+      // Detail panel feeds: instantaneous level for the VU meter, and
+      // a rolling 128-sample history for the waveform multislider.
+      if (name === focusName) {
+        focusWaveform.shift();
+        focusWaveform.push(level);
+        Max.outlet("focus", "level", level, peak);
+        Max.outlet.apply(Max, ["focus", "waveform"].concat(focusWaveform));
+      }
       break;
     }
     case "touch": {
@@ -1167,6 +1181,13 @@ function emitFocusName() {
   Max.outlet("focus", "name", focusName || "(none)");
 }
 function emitFocusAll() {
+  // Reset the waveform buffer on focus change — otherwise the previous
+  // focus's level history bleeds visually into the new focus's display
+  // until 128 new samples have shifted it out.
+  focusWaveform = new Array(FOCUS_WAVE_LEN).fill(0);
+  Max.outlet.apply(Max, ["focus", "waveform"].concat(focusWaveform));
+  Max.outlet("focus", "level", 0, 0);
+
   emitFocusName();
   if (!focusName) {
     Max.outlet("focus", "roles",   "—");
