@@ -647,6 +647,30 @@
 			},
 			{
 				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-loadbang",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "bang" ],
+					"patching_rect" : [ 1180.0, 740.0, 80.0, 22.0 ],
+					"text" : "loadbang"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-delay-init",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "bang" ],
+					"patching_rect" : [ 1180.0, 768.0, 80.0, 22.0 ],
+					"text" : "delay 500"
+				}
+			},
+			{
+				"box" : 				{
 					"id" : "obj-node",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
@@ -1457,6 +1481,12 @@
 			{ "patchline" : { "source" : [ "obj-route-cloud",  1 ], "destination" : [ "obj-i-cloud-connected", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route",        8 ], "destination" : [ "obj-print-audience", 0 ] } },
 			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock", 0 ], "hidden" : 1 } },
+
+			{ "patchline" : { "source" : [ "obj-loadbang",   0 ], "destination" : [ "obj-delay-init", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-cloudurl",  0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-piece",     0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-room",      0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-sitebase",  0 ], "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-t-sitebase",      0 ], "destination" : [ "obj-p-sitebase",  0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-p-sitebase",      0 ], "destination" : [ "obj-node",        0 ], "hidden" : 1 } },
