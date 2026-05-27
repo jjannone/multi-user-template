@@ -1260,20 +1260,39 @@
 			},
 			{
 				"box" : 				{
-					"id" : "obj-meter",
-					"maxclass" : "multislider",
+					"hidden" : 1,
+					"id" : "obj-unpack-level",
+					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 2,
-					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 1500.0, 1094.0, 220.0, 24.0 ],
+					"outlettype" : [ "float", "float" ],
+					"patching_rect" : [ 1500.0, 1070.0, 80.0, 22.0 ],
+					"text" : "unpack 0. 0."
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-sig",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "signal" ],
+					"patching_rect" : [ 1500.0, 1094.0, 60.0, 22.0 ],
+					"text" : "sig~ 0"
+				}
+			},
+			{
+				"box" : 				{
+					"id" : "obj-meter",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "float" ],
+					"patching_rect" : [ 1500.0, 1120.0, 220.0, 22.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 1090.0, 688.0, 220.0, 24.0 ],
-					"size" : 2,
-					"orientation" : 0,
-					"setminmax" : [ 0.0, 1.0 ],
-					"contdata" : 1,
-					"bgcolor" : [ 0.0, 0.0, 0.0, 1.0 ],
-					"slidercolor" : [ 0.42, 0.82, 0.42, 1.0 ]
+					"presentation_rect" : [ 1090.0, 688.0, 220.0, 22.0 ],
+					"text" : "meter~"
 				}
 			},
 			{
@@ -1282,31 +1301,45 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 1500.0, 1124.0, 220.0, 20.0 ],
+					"patching_rect" : [ 1500.0, 1148.0, 220.0, 20.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 1090.0, 720.0, 220.0, 20.0 ],
+					"presentation_rect" : [ 1090.0, 716.0, 220.0, 20.0 ],
 					"fontname" : "Courier",
-					"text" : "Waveform (mic level history)"
+					"text" : "Waveform (live.scope~ on level signal)"
 				}
 			},
 			{
 				"box" : 				{
-					"id" : "obj-wave",
-					"maxclass" : "multislider",
+					"id" : "obj-scope",
+					"maxclass" : "newobj",
 					"numinlets" : 1,
-					"numoutlets" : 2,
-					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 1500.0, 1148.0, 220.0, 130.0 ],
+					"numoutlets" : 0,
+					"patching_rect" : [ 1500.0, 1172.0, 220.0, 130.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 1090.0, 744.0, 220.0, 130.0 ],
-					"size" : 128,
-					"orientation" : 1,
-					"candycane" : 0,
-					"slidersperset" : 1,
-					"setminmax" : [ 0.0, 1.0 ],
-					"contdata" : 1,
-					"bgcolor" : [ 0.0, 0.0, 0.0, 1.0 ],
-					"slidercolor" : [ 0.42, 0.82, 0.42, 1.0 ]
+					"presentation_rect" : [ 1090.0, 740.0, 220.0, 130.0 ],
+					"text" : "live.scope~"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-msg-dsp-on",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1700.0, 740.0, 100.0, 22.0 ],
+					"text" : "startwindow"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-ezdac",
+					"maxclass" : "ezdac~",
+					"numinlets" : 2,
+					"numoutlets" : 0,
+					"patching_rect" : [ 1700.0, 768.0, 45.0, 45.0 ]
 				}
 			},
 			{
@@ -1500,8 +1533,12 @@
 			{ "patchline" : { "source" : [ "obj-route",       11 ], "destination" : [ "obj-detail-cellblock", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route-focus",  0 ], "destination" : [ "obj-p-focus-name",     0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-p-focus-name", 0 ], "destination" : [ "obj-c-focus-name",     0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-route-focus",  4 ], "destination" : [ "obj-meter",            0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-route-focus",  5 ], "destination" : [ "obj-wave",             0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-route-focus",  4 ], "destination" : [ "obj-unpack-level",    0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-unpack-level", 0 ], "destination" : [ "obj-sig",             0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-sig",          0 ], "destination" : [ "obj-meter",           0 ] } },
+			{ "patchline" : { "source" : [ "obj-sig",          0 ], "destination" : [ "obj-scope",           0 ] } },
+			{ "patchline" : { "source" : [ "obj-loadbang",     0 ], "destination" : [ "obj-msg-dsp-on",      0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-msg-dsp-on",   0 ], "destination" : [ "obj-ezdac",           0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-cellblock",    0 ], "destination" : [ "obj-p-cellclick",      0 ] } },
 			{ "patchline" : { "source" : [ "obj-p-cellclick",  0 ], "destination" : [ "obj-node",             0 ], "hidden" : 1 } },
 
