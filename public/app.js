@@ -165,15 +165,20 @@ function handleServerMessage(msg) {
     return;
   }
   if (msg.type === "snapshot") {
+    const firstSnap   = !lastSnap;
     const prevStarted = lastSnap && lastSnap.started;
     lastSnap = msg;
     if (msg.you && pendingRoles.size === 0 && msg.you.roles.length > 0) {
       pendingRoles = new Set(msg.you.roles);
     }
-    // If the stage just opened/closed, force a full render so we move
-    // between lobby and stage screens. Otherwise only refresh the roster
-    // / status bits to avoid stomping on a tab the user is interacting with.
-    if ((prevStarted ? 1 : 0) !== (msg.started ? 1 : 0)) {
+    // Full re-render on:
+    //   - first snapshot (the join page's role tiles need availableRoles,
+    //     which arrives in the snapshot — without this re-render, the
+    //     initial paint shows an empty role grid and never recovers)
+    //   - stage transition (lobby ↔ stage swaps the whole screen)
+    // Otherwise refresh roster + header in place so we don't stomp on
+    // whatever tab / sensor card the user is interacting with.
+    if (firstSnap || (prevStarted ? 1 : 0) !== (msg.started ? 1 : 0)) {
       render();
     } else {
       updateHeader();
