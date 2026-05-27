@@ -37,6 +37,14 @@ const config = {
 const isCloud    = config.cloudUrl && config.piece && config.room;
 const isAudience = isCloud && config.view === "audience";
 
+// When the page is served from the public Pages site (john.jann.one or
+// *.github.io) WITHOUT cloud query params, there's no usable WebSocket
+// target — the Pages host doesn't run server.js. Skip the connect loop
+// and show a landing instead, so a visitor who clicks the project link
+// from john.jann.one sees something useful instead of an infinite spinner.
+const isPublicHost = /(github\.io|jann\.one)$/i.test(location.hostname);
+const isLanding    = isPublicHost && !isCloud;
+
 // ── state ───────────────────────────────────────────────────────
 
 let myName       = null;
@@ -109,6 +117,13 @@ function wsUrl() {
   return proto + "//" + location.host + "/";
 }
 function connect() {
+  if (isLanding) {
+    // Hosted on the public Pages site with no cloud params — there's
+    // nothing to connect to. Don't enter the reconnect loop; the
+    // landing screen explains how to actually use the template.
+    setMeta("landing");
+    return;
+  }
   try { ws = new WebSocket(wsUrl()); }
   catch (e) { setMeta("ws fail", true); scheduleReconnect(); return; }
   ws.onopen = () => {
@@ -1633,6 +1648,7 @@ function render() {
   updateHeader();
   const main = document.getElementById("main");
   main.innerHTML = "";
+  if (isLanding) { main.appendChild(renderLanding()); return; }
   if (isAudience) {
     if (!myName) { main.appendChild(renderAudienceJoin()); return; }
     main.appendChild(renderAudienceMain());
@@ -1641,6 +1657,34 @@ function render() {
   if (!myName)                       { main.appendChild(renderJoin());  return; }
   if (lastSnap && lastSnap.started)  { main.appendChild(renderStage()); return; }
   main.appendChild(renderLobby());
+}
+
+// Public-host landing — shown when someone visits the Pages URL
+// directly without join params. Explains the model and offers links
+// out (back to the projects index and to the source repo) so the
+// visitor isn't stranded on a perpetual "connecting…" spinner.
+function renderLanding() {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <h1>multi-user template</h1>
+    <p>This is a Max/MSP framework that turns phones into controllers — sensors, MIDI, sliders, mic, camera, multitouch — for collaborative pieces.</p>
+
+    <div class="panel">
+      <h2>To use it</h2>
+      <p>You'll get a custom link from whoever's running the show: a <strong>Performer URL</strong> if you're playing, or an <strong>Audience URL</strong> if you're watching. Those links include the relay address, piece, and room — they're how your phone finds the Max patch.</p>
+      <p>If you don't have a link yet, ask the operator.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Run it yourself</h2>
+      <p>Clone the repo, open the Max patch, point performers at <code>http://&lt;your-lan-ip&gt;:8080/</code>. For remote performers or audience over the internet, deploy the Cloudflare Worker in <code>cloud/worker/</code> and connect from the patch's CLOUD RELAY section — it generates the share URLs for you.</p>
+      <p class="row" style="margin-top:10px">
+        <a class="ghost" style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);text-decoration:none;color:var(--fg)" href="https://github.com/jjannone/multi-user-template">View source on GitHub</a>
+        <a class="ghost" style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);text-decoration:none;color:var(--fg)" href="/">← Back to projects</a>
+      </p>
+    </div>
+  `;
+  return wrap;
 }
 
 // ── audience UI ─────────────────────────────────────────────────
