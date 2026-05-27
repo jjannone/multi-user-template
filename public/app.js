@@ -387,8 +387,13 @@ function renderRosterInto(el) {
   lastSnap.roster.forEach(r => {
     const c = document.createElement("div");
     c.className = "chip" + (r.name === myName ? " me" : "") + (r.isAdmin ? " admin" : "") + (r.connected ? "" : " offline");
-    const roleStr = r.roles.length ? r.roles.join(", ") : "—";
-    c.innerHTML = `<span>${escHtml(r.name)}${r.connected ? "" : " *"}</span><span class="role">${escHtml(roleStr)}</span>`;
+    // Each role becomes its own little tag inside the chip, so the
+    // viewer can see at a glance which roles a performer has. Empty
+    // role set renders no tags (the name alone implies "still picking").
+    const tags = r.roles.length
+      ? r.roles.map(role => `<span class="role-tag${role === "admin" ? " admin" : ""}">${escHtml(role)}</span>`).join("")
+      : "";
+    c.innerHTML = `<span class="chip-name">${escHtml(r.name)}${r.connected ? "" : " *"}</span>${tags}`;
     el.appendChild(c);
   });
 }

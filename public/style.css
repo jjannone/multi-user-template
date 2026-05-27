@@ -85,8 +85,21 @@ code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 .chip.me    { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .chip.admin { border-color: var(--admin); color: var(--admin); }
 .chip.offline { opacity: 0.5; font-style: italic; }
-.chip .role { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.chip.me .role { color: #444; }
+.chip-name { font-weight: 600; }
+.chip .role-tag {
+  padding: 1px 6px; border-radius: 6px;
+  background: rgba(108, 208, 108, 0.18); color: var(--hot);
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  border: 1px solid rgba(108, 208, 108, 0.35);
+}
+.chip .role-tag.admin {
+  background: rgba(255, 184, 77, 0.18); color: var(--admin);
+  border-color: rgba(255, 184, 77, 0.45);
+}
+.chip.me .role-tag {
+  background: rgba(255,255,255,0.85); color: #1a4a1a; border-color: #1a4a1a;
+}
+.chip.me .role-tag.admin { color: #5a3a14; border-color: #5a3a14; }
 .roster-empty { color: var(--muted); font-style: italic; font-size: 13px; padding: 4px 8px; }
 
 /* join-screen role tiles */

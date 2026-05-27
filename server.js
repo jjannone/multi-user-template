@@ -743,13 +743,18 @@ function snapshotFor(viewerName) {
   });
   let adminCount = 0;
   performers.forEach(p => { if (p.isAdmin && p.connected) adminCount++; });
+  // "admin" is always presented as a role tile alongside the configured
+  // ones. Dedup defensively in case cfg.roles happens to contain "admin"
+  // (e.g. operator typed it into the Roles textedit before setroles'
+  // filter ran, a derived repo edited the default, etc.) — without the
+  // dedup the role grid renders two "admin" tiles.
+  const available = cfg.roles.filter(r => r !== ADMIN_ROLE).concat([ADMIN_ROLE]);
   const out = {
     type:           "snapshot",
     started,
-    // "admin" is always presented as a role tile alongside the configured
-    // ones. adminRequiresPassword tells the client whether picking admin
+    availableRoles:        available,
+    // adminRequiresPassword tells the client whether picking admin
     // triggers a password challenge or is a free claim.
-    availableRoles:        cfg.roles.concat([ADMIN_ROLE]),
     adminRequiresPassword: cfg.password.length > 0,
     // Legacy field kept for any older clients that still read it; same
     // semantics: true when picking admin requires a password.
@@ -1277,9 +1282,15 @@ function handleRemotePerformInbound(msg) {
     p.connected = true;
     sendRoster();
     emitPerformerRoles(p);
-    // Push the personalized snapshot back so the remote client knows
-    // the relay handshake worked.
+    // Match the LAN path: send a {type:"joined"} ack THEN the
+    // personalized snapshot. The client uses the "joined" event to
+    // trigger sendRoles() — without it cloud performers never
+    // transmit the role tiles they picked on the Join screen, so
+    // p.roles stays empty and downstream UI (admin chip, START
+    // button, roster role labels) all render as if no role was
+    // chosen. See client app.js handleServerMessage.
     if (cloudWs && cloudReady) {
+      try { cloudWs.send(JSON.stringify({ to: name, type: "joined", name })); } catch (_) {}
       try { cloudWs.send(JSON.stringify(Object.assign({ to: name }, snapshotFor(name)))); } catch (_) {}
     }
     return;
