@@ -55,6 +55,11 @@ let lastSnap     = null;
 let ws           = null;
 let wsReady      = false;
 let reconnectTimer = null;
+// Last `mu-hello` from the relay (cloud mode only). Carries a count of
+// connected hosts/performers/audience so the join screen can show a
+// helpful "waiting for Max host" state when the relay is reachable but
+// no host has registered yet.
+let cloudHello   = null;
 
 // Per-tab "is the stream on" flags, kept in one place so tab re-renders
 // can show the correct ON/OFF state.
@@ -175,8 +180,10 @@ function sendAudienceReact(emoji) {
 
 function handleServerMessage(msg) {
   if (msg.type === "mu-hello") {
-    // Relay handshake — first message after the WS opens in cloud mode.
-    // No action; the host's first snapshot will follow.
+    // Relay handshake — carries connection counts. Stash it so the join
+    // screen can show "waiting for Max host" if no host is registered.
+    cloudHello = msg;
+    render();
     return;
   }
   if (msg.type === "snapshot") {
@@ -245,9 +252,30 @@ function updateHeader() {
 function renderJoin() {
   const adminEnabled = lastSnap && lastSnap.adminEnabled;
   const roles        = (lastSnap && lastSnap.availableRoles) || [];
+  // Diagnostic for the empty-role-grid case: distinguish "haven't
+  // received any snapshot yet" (waiting on relay or Max) from "got a
+  // snapshot but the roles list is empty" (operator-side config error).
+  const noSnap   = !lastSnap;
+  const noRoles  = lastSnap && roles.length === 0;
+  let waitingMsg = "";
+  if (noSnap) {
+    if (isCloud && cloudHello) {
+      const hosts = (cloudHello.connections && cloudHello.connections.host) || 0;
+      waitingMsg = hosts > 0
+        ? "Connected to the relay — waiting for the Max host's first snapshot…"
+        : "Connected to the relay, but no Max host is online for this piece/room yet. Open the patch and press Cloud connect.";
+    } else if (isCloud) {
+      waitingMsg = "Connecting to the relay…";
+    } else {
+      waitingMsg = "Connecting to the Max server…";
+    }
+  } else if (noRoles) {
+    waitingMsg = "The host hasn't configured any roles. In the Max patch, type roles into the Roles textedit and press Enter.";
+  }
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <h1>Join</h1>
+    ${waitingMsg ? `<div class="panel" style="background:#2a2a1a;border-color:var(--admin);color:var(--admin)"><strong>Waiting:</strong> ${escHtml(waitingMsg)}</div>` : ""}
     <p>Enter a name and pick one or more roles. Reconnects under the same name keep your role and admin status.</p>
     <div class="panel">
       <input id="name-in" type="text" placeholder="Your name" autocomplete="off" autocapitalize="words" value="${escAttr(pendingName)}" />

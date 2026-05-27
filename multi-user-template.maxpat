@@ -568,7 +568,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 20.0, 584.0, 700.0, 20.0 ],
-					"text" : "[udpreceive] → [oscparse] → [route /user] gives one outlet per performer. Add per-user [route motion gyro orient touch geo mic battery net heading light] downstream."
+					"text" : "[udpreceive 7400] receives OSC FullPackets. Max 9 has no built-in OSC-to-message parser, so for routing-by-address install CNMAT Externals and wire [OSC-route /user] downstream. The same sensor data is also available via the SERVER outlet's [route sensor] path below — no OSC parser needed."
 				}
 			},
 			{
@@ -580,28 +580,6 @@
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 20.0, 612.0, 140.0, 22.0 ],
 					"text" : "udpreceive 7400"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-oscparse",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 20.0, 640.0, 140.0, 22.0 ],
-					"text" : "oscparse"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-route-user",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 2,
-					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 20.0, 668.0, 100.0, 22.0 ],
-					"text" : "route /user"
 				}
 			},
 			{
@@ -1445,9 +1423,7 @@
 			{ "patchline" : { "source" : [ "obj-route", 4 ],      "destination" : [ "obj-i-started", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-route", 5 ],      "destination" : [ "obj-n-admin", 0 ], "hidden" : 1 } },
 
-			{ "patchline" : { "source" : [ "obj-udprecv", 0 ],    "destination" : [ "obj-oscparse", 0 ] } },
-			{ "patchline" : { "source" : [ "obj-oscparse", 0 ],   "destination" : [ "obj-route-user", 0 ] } },
-			{ "patchline" : { "source" : [ "obj-route-user", 0 ], "destination" : [ "obj-print-osc", 0 ] } },
+			{ "patchline" : { "source" : [ "obj-udprecv", 0 ],    "destination" : [ "obj-print-osc", 0 ] } },
 
 			{ "patchline" : { "source" : [ "obj-msg-vibrate-100", 0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-msg-vibrate-500", 0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },

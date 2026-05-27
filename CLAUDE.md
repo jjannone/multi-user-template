@@ -253,6 +253,44 @@ or a manual delete can drop it without warning. **Don't try to debug
 the client first** when this symptom appears; check `ls node_modules`
 in the repo root before anything else.
 
+### Never render an empty container when server-driven state hasn't arrived
+
+The Join screen reads `lastSnap.availableRoles` to draw role tiles.
+Before the first snapshot arrives, that's `[]`, so the role-grid `<div>`
+renders empty — same DOM whether (a) we're connecting, (b) the relay
+sees no host, or (c) the host genuinely has no roles configured.
+
+Three different problems, one indistinguishable empty box. The fix is
+to **detect each "not yet" state explicitly and label it**:
+
+- `!lastSnap` → "Connecting…" / "Waiting for Max host" (with relay info)
+- `lastSnap` but empty `availableRoles` → "Host configured no roles"
+- `lastSnap` with roles → tiles
+
+The rule: any UI region that depends on server-pushed state must have
+a visible placeholder explaining *which* not-yet-arrived piece is
+missing. Empty DOM = silent failure that's indistinguishable from
+network problems, server bugs, and operator config errors.
+
+This isn't a hypothetical — confused users will reload until they hit
+something else, never realizing the operator just hadn't pressed
+**Cloud connect** in the patch.
+
+### OSC parsing requires an external — Max 9 has no `oscparse`
+
+`[udpreceive 7400]` receives OSC FullPackets, but Max 9 ships no
+built-in object to convert them into address-prefixed Max messages.
+The relevant built-ins (`osc.codebox`, `osc.packet`) are UI / storage
+utilities, not routers. To route by address you need a package
+external like CNMAT's `[OSC-route /user]` (from CNMAT Externals).
+
+If you don't want the package dependency, **the same sensor data is
+available via the SERVER outlet → `[route sensor]` chain** — that path
+uses Max.outlet directly and works without any OSC parsing. The OSC
+port is there for users who specifically want a parallel binary
+transport (TouchOSC compat, latency-sensitive scenarios). It's not
+required for the template to function.
+
 ### Cloud bridge: same room, two transports, one unified roster
 
 The LAN HTTP+WS server in `server.js` continues to be authoritative.
