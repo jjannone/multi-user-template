@@ -1,0 +1,14 @@
+{
+  "name": "mu-relay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker that relays WebSocket traffic between a multi-user-template host (Max) and remote performers + audience. Generic — one deploy serves every piece built on the template.",
+  "scripts": {
+    "dev":    "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail":   "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

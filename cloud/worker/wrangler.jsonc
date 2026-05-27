@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mu-relay",
+  "main": "src/index.js",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "54463df85c591eb79835372fb9505ffb",
+  "observability": { "enabled": true },
+
+  // One Durable Object class — MuRoom — keyed per (piece, room).
+  // The class lives in src/room.js and is re-exported by src/index.js.
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "MuRoom" }
+    ]
+  },
+  // Required when a DO class is added.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["MuRoom"] }
+  ]
+}

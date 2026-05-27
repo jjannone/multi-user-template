@@ -1,0 +1,13 @@
+{
+  "name": "multi-user-template",
+  "version": "0.1.0",
+  "description": "Multi-user Max interaction template — performers join from phones, choose roles (with admin password gate), stay in a lobby until an admin starts the piece, then stream every available phone sensor back to Max via WebSocket and OSC/UDP.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "osc": "^2.4.5"
+  }
+}
