@@ -654,12 +654,13 @@ function renderMidiTab() {
         <button class="ghost" id="oct-up">+</button>
         <label style="margin-left:12px">channel</label>
         <input type="number" id="midi-channel" value="1" min="1" max="16" style="width:60px" />
+        <button class="ghost" id="midi-fs" style="margin-left:12px">⛶ Fullscreen + landscape</button>
       </div>
       <div class="midi-keys" id="midi-keys"></div>
       <div class="v" id="midi-readout" style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px">—</div>
     </div>
     <div class="panel">
-      <p>Sends <code>midi noteon &lt;note&gt; &lt;vel&gt; &lt;chan&gt;</code> / <code>midi noteoff …</code> via WebSocket and OSC <code>/user/&lt;name&gt;/midi/noteon</code>.</p>
+      <p>Sends <code>midi noteon &lt;note&gt; &lt;vel&gt; &lt;chan&gt;</code> / <code>midi noteoff …</code> via WebSocket and OSC <code>/user/&lt;name&gt;/midi/noteon</code>. For full-keyboard playability, tap <strong>Fullscreen + landscape</strong> — rotates the screen to landscape and hides browser chrome so the keys fill the device.</p>
     </div>`;
   queueMicrotask(() => bindMidiKeyboard(div));
   return div;
@@ -920,9 +921,27 @@ function maybeStopOrientListener() {
 
 // Generic Sensor API — Chromium-only. Uses a single helper for the four
 // kinds with the same shape (Gravity/LinearAccel/Magnetometer/Pressure).
+// Critical caveat: these constructors exist in Chromium-based browsers
+// (Chrome, Edge, Opera on Android) but the OS-level permission is only
+// granted over secure contexts. On http://lan-ip:8080 they throw
+// SecurityError (sometimes silently). The cloud-relay path served over
+// https://john.jann.one/multi-user-template/ works because it's HTTPS.
+// On iOS browsers (all of them, including iOS Opera) the constructors
+// simply don't exist — they all use WebKit which has no Generic Sensor API.
 function startGeneric(key, ctorName, freq) {
   const Ctor = window[ctorName + "Sensor"] || window[ctorName];
-  if (typeof Ctor !== "function") throw new Error(`no ${ctorName}Sensor (Chrome/Android only)`);
+  if (typeof Ctor !== "function") {
+    throw new Error(`no ${ctorName}Sensor — Chromium-on-Android only (iOS browsers all use WebKit)`);
+  }
+  if (location.protocol !== "https:" && location.hostname !== "localhost" && !/^\d/.test(location.hostname)) {
+    // Most Generic Sensor APIs require a secure context. The LAN URL
+    // (http://192.168.x.x:8080) actually qualifies as secure on
+    // Chromium per the "Treat content from this origin as secure" rule
+    // for RFC1918 ranges in many builds, but Opera/Android enforces
+    // strict HTTPS. Pre-warn rather than letting the SecurityError
+    // bubble up cryptically.
+    throw new Error("Generic Sensor API needs HTTPS — open the cloud Performer URL instead");
+  }
   const s = sensors[key];
   const sensor = new Ctor({ frequency: freq });
   sensor.onreading = () => {
@@ -974,6 +993,13 @@ function startProximity() {
 function startGeo() {
   if (!navigator.geolocation) throw new Error("no geolocation");
   sensors.geo.on = true;
+  // maximumAge: 0 forces a fresh fix every callback rather than letting
+  // the browser reuse a cached position. Combined with enableHighAccuracy
+  // this asks the OS for GPS-grade (not cellular-triangulation) positions.
+  // First fix can still be slow (5–30 s outdoors); indoors often gives
+  // only cell-tower triangulation (~50–500 m) regardless of these flags.
+  // On iOS the user must also have "Precise Location" enabled for the
+  // browser app in Settings → Privacy → Location Services.
   sensors.geo.watchId = navigator.geolocation.watchPosition(
     (pos) => {
       const lat = pos.coords.latitude, lon = pos.coords.longitude;
@@ -982,7 +1008,7 @@ function startGeo() {
       readout("geo", `${lat.toFixed(5)}, ${lon.toFixed(5)}  ±${Math.round(accuracy)}m`);
     },
     (err) => readout("geo", "err: " + err.message),
-    { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
   );
 }
 
@@ -1312,19 +1338,44 @@ function bindMidiKeyboard(root) {
   const readout   = root.querySelector("#midi-readout");
   const octEl     = root.querySelector("#oct-display");
   const channelEl = root.querySelector("#midi-channel");
+  const fsBtn     = root.querySelector("#midi-fs");
   let octave = 4;
   const lowNote = () => octave * 12;
-  // Two octaves of keys = 14 white keys, 10 black keys
-  const whitePattern = ["C","D","E","F","G","A","B","C","D","E","F","G","A","B"];
-  const blackPositions = [0,1,3,4,5,7,8,10,11,12]; // indexes (relative to white-key index 0) where black keys sit AFTER that white
-  // Map: whiteIdx → semitone offset
+
+  // Two octaves of keys = 14 white keys (C D E F G A B  C D E F G A B)
+  //                    + 10 black keys (C# D# F# G# A#  C# D# F# G# A#)
+  const whitePattern   = ["C","D","E","F","G","A","B","C","D","E","F","G","A","B"];
   const whiteSemitones = [0,2,4,5,7,9,11,12,14,16,17,19,21,23];
   const blackSemitones = [1,3,6,8,10,13,15,18,20,22];
+
+  // Black-key center positions in units of white-key width.
+  //
+  // Each black key sits on the BOUNDARY between two adjacent whites,
+  // so the natural center is at integer x-units (1, 2, 4, 5, 6, …).
+  // On a real acoustic piano the C#/D# pair pulls slightly outward and
+  // the F#/G#/A# triplet does the same, giving the 2-then-3 cluster
+  // its instantly-recognisable shape. We bake that asymmetry in:
+  //
+  //   C#  → 0.95 (slightly left of the C-D boundary, toward C)
+  //   D#  → 2.05 (slightly right of D-E boundary, toward E)
+  //   F#  → 3.95 (slightly left of F-G,           toward F)
+  //   G#  → 5.00 (centered on G-A)
+  //   A#  → 6.05 (slightly right of A-B,          toward B)
+  //
+  // The previous offsets ([0.7, 1.7, 3.7 …]) placed each black key
+  // 70% of the way INSIDE a white key, not straddling the boundary —
+  // visually wrong and made finger reach feel off.
+  const blackCenters = [
+    0.95, 2.05, 3.95, 5.00, 6.05,   // first octave
+    7.95, 9.05, 10.95, 12.00, 13.05 // second octave
+  ];
+
   const active = new Map(); // pointerId → noteNumber
 
   function rebuild() {
     keysEl.innerHTML = "";
     const w = keysEl.clientWidth;
+    if (w <= 0) return; // not yet laid out
     const whiteW = w / 14;
     whiteSemitones.forEach((semi, i) => {
       const k = document.createElement("div");
@@ -1332,17 +1383,23 @@ function bindMidiKeyboard(root) {
       k.style.left  = (i * whiteW) + "px";
       k.style.width = whiteW + "px";
       k.dataset.note = String(lowNote() + semi);
-      k.textContent = (i % 7 === 0) ? (whitePattern[i] + (octave + Math.floor(i / 7))) : "";
+      // Label only the C of each octave so the keyboard isn't visually
+      // noisy when the screen is narrow.
+      if (i % 7 === 0) {
+        const oct = octave + Math.floor(i / 7);
+        k.textContent = "C" + oct;
+      }
       keysEl.appendChild(k);
     });
     const blackW = whiteW * 0.6;
-    const blackOffsets = [0.7, 1.7, 3.7, 4.7, 5.7, 7.7, 8.7, 10.7, 11.7, 12.7];
     blackSemitones.forEach((semi, i) => {
       const k = document.createElement("div");
       k.className = "midi-key black";
-      k.style.left  = (blackOffsets[i] * whiteW - blackW / 2) + "px";
+      k.style.left  = (blackCenters[i] * whiteW - blackW / 2) + "px";
       k.style.width = blackW + "px";
-      k.style.height = "60%";
+      // Black keys cover ~62% of the keyboard height, leaving the
+      // lower portion of the white keys visible for ergonomic reach.
+      k.style.height = "62%";
       k.dataset.note = String(lowNote() + semi);
       keysEl.appendChild(k);
     });
@@ -1393,6 +1450,28 @@ function bindMidiKeyboard(root) {
 
   root.querySelector("#oct-down").onclick = () => { octave = Math.max(0, octave - 1); octEl.textContent = octave; rebuild(); };
   root.querySelector("#oct-up").onclick   = () => { octave = Math.min(8, octave + 1); octEl.textContent = octave; rebuild(); };
+
+  // Fullscreen + landscape lock. Both API calls must happen from inside
+  // a user-gesture handler — that's the only context where iOS Safari
+  // will grant fullscreen and where Chromium will accept an orientation
+  // lock. Both are best-effort: fullscreen may be denied on iOS for
+  // non-video elements, and orientation lock fails on desktop and
+  // on some mobile browsers (Firefox Mobile).
+  if (fsBtn) fsBtn.onclick = async () => {
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); // iOS Safari
+    } catch (e) { /* user-denied or unsupported — fine */ }
+    if (screen.orientation && screen.orientation.lock) {
+      try { await screen.orientation.lock("landscape"); } catch (e) { /* unsupported */ }
+    }
+    // Re-measure now that the layout changed.
+    requestAnimationFrame(rebuild);
+  };
+
+  // Also rebuild on orientation / resize so the keys re-flow.
+  window.addEventListener("resize", () => requestAnimationFrame(rebuild));
   // Wait one frame for layout, then size keys.
   requestAnimationFrame(rebuild);
 }
@@ -1445,7 +1524,16 @@ function handleServerCommand(msg) {
   if (log) log.textContent = cmdLog.join("\n");
   switch (msg.cmd) {
     case "vibrate":
-      if (navigator.vibrate) navigator.vibrate(Math.max(0, Number(msg.ms) || 0));
+      // navigator.vibrate exists on Android Chromium/Firefox; iOS Safari
+      // (and any browser on iOS, since they all use WebKit) has no
+      // Vibration API at all. Surface this to the user instead of
+      // silently no-op'ing.
+      if (navigator.vibrate) {
+        navigator.vibrate(Math.max(0, Number(msg.ms) || 0));
+      } else {
+        const log = document.getElementById("cmd-log");
+        if (log) log.textContent = `vibrate not supported on this browser (iOS uses WebKit; no Vibration API)\n${log.textContent}`;
+      }
       break;
     case "speak": {
       if (!("speechSynthesis" in window)) return;
@@ -1485,7 +1573,12 @@ function handleServerCommand(msg) {
 
 function ensureAudio(force) {
   if (audio.ctx) {
-    if (audio.ctx.state === "suspended" && force) audio.ctx.resume();
+    // Always attempt resume — Opera/Chrome may suspend an existing
+    // context if it was created outside a user gesture, even if force
+    // wasn't passed. resume() is a no-op when already running.
+    if (audio.ctx.state === "suspended") {
+      try { audio.ctx.resume(); } catch (_) {}
+    }
     return;
   }
   const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -1494,6 +1587,18 @@ function ensureAudio(force) {
   audio.master = audio.ctx.createGain();
   audio.master.gain.value = 0.3;
   audio.master.connect(audio.ctx.destination);
+  // Prime SpeechSynthesis at the same moment so the FIRST Max→phone
+  // `speak` command actually fires. Opera and some Chromium builds
+  // need a speech utterance to land inside the same user gesture that
+  // unlocks audio; otherwise speechSynthesis.speak() silently queues
+  // until the next gesture (which may never come from the user side).
+  if (force && "speechSynthesis" in window) {
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch (_) {}
+  }
   refreshAudioStatus();
 }
 
