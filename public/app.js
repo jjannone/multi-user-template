@@ -75,7 +75,7 @@ const sensors = {
   proximity: { on: false },
   geo:       { on: false, watchId: null },
   mic:       { on: false, ctx: null, stream: null, raf: 0, analyser: null },
-  camera:    { on: false, stream: null },
+  camera:    { on: false, stream: null, streamTimer: 0, streamCanvas: null },
   speech:    { on: false, rec: null },
   pointer:   { on: false },
   gamepad:   { on: false, raf: 0 },
@@ -544,9 +544,63 @@ function renderCameraTab() {
   const div = document.createElement("div");
   div.innerHTML =
     sensorCard("camera", "Camera preview", "frames stay on-device by default") +
-    `<div class="panel"><video class="video-prev" id="camera-prev" autoplay muted playsinline style="display:none"></video></div>`;
+    `<div class="panel">
+       <video class="video-prev" id="camera-prev" autoplay muted playsinline style="display:none"></video>
+       <div class="row" style="margin-top:10px;align-items:center">
+         <label style="display:flex;align-items:center;gap:6px">
+           <input type="checkbox" id="camera-stream" />
+           Stream frames to Max (~3 fps JPEG)
+         </label>
+       </div>
+       <div class="v" id="camera-stream-status" style="font-size:12px;color:var(--muted);margin-top:6px">off</div>
+     </div>`;
   bindSensorCards(div);
+  queueMicrotask(() => {
+    const cb = div.querySelector("#camera-stream");
+    if (cb) cb.onchange = () => setCameraStreaming(cb.checked);
+  });
   return div;
+}
+
+// Frame-streaming for the Detail panel's jit.pwindow. Only meaningful
+// while the Camera card is ON (we need an active stream to capture
+// from). Posts a JPEG dataURL once every 333 ms; the server decodes
+// and writes a per-performer temp file the patch's jit.matrix reads.
+function setCameraStreaming(on) {
+  const s = sensors.camera;
+  const status = document.getElementById("camera-stream-status");
+  if (!on) {
+    if (s.streamTimer) clearInterval(s.streamTimer);
+    s.streamTimer = 0;
+    if (status) status.textContent = "off";
+    return;
+  }
+  if (!s.on || !s.stream) {
+    if (status) status.textContent = "turn the Camera card on first";
+    const cb = document.getElementById("camera-stream");
+    if (cb) cb.checked = false;
+    return;
+  }
+  if (!s.streamCanvas) {
+    s.streamCanvas = document.createElement("canvas");
+    s.streamCanvas.width = 320; s.streamCanvas.height = 240;
+  }
+  const video = document.getElementById("camera-prev");
+  const ctx = s.streamCanvas.getContext("2d");
+  let frames = 0;
+  s.streamTimer = setInterval(() => {
+    if (!sensors.camera.on || !video || video.videoWidth === 0) return;
+    try {
+      ctx.drawImage(video, 0, 0, s.streamCanvas.width, s.streamCanvas.height);
+      const dataUrl = s.streamCanvas.toDataURL("image/jpeg", 0.5);
+      sendSensor("video", { frame: dataUrl });
+      frames++;
+      if (status && frames % 6 === 0) status.textContent = `streaming — ${frames} frames sent`;
+    } catch (e) {
+      if (status) status.textContent = "capture failed: " + e.message;
+    }
+  }, 333);
+  if (status) status.textContent = "streaming — opens the patch's Detail jit.pwindow";
 }
 
 function renderTouchTab() {
@@ -805,10 +859,15 @@ function stopSensor(key) {
       if (s.rec) { try { s.rec.stop(); } catch (_) {} }
       s.rec = null; break;
     case "camera":
+      if (s.streamTimer) { clearInterval(s.streamTimer); s.streamTimer = 0; }
       if (s.stream) s.stream.getTracks().forEach(t => t.stop());
       s.stream = null;
       const v = document.getElementById("camera-prev");
       if (v) { v.srcObject = null; v.style.display = "none"; }
+      const cb = document.getElementById("camera-stream");
+      if (cb) cb.checked = false;
+      const st = document.getElementById("camera-stream-status");
+      if (st) st.textContent = "off";
       break;
     case "gamepad":
       cancelAnimationFrame(s.raf); s.raf = 0; break;

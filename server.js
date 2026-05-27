@@ -652,6 +652,29 @@ function handleSensor(name, msg) {
       recordSensor(name, "screen", `${orientation}${visible ? "" : " hidden"}${fullscreen ? " fs" : ""}`);
       break;
     }
+    case "video": {
+      // Camera frame from the phone, base64-encoded JPEG. Decode and
+      // atomically replace a per-performer temp file, then tell the
+      // patch to importmovie it into the jit.matrix that feeds the
+      // detail jit.pwindow. Only fires when the sender is the focused
+      // performer (other phones still get their summary in the cell
+      // grid, but we don't write video files for them).
+      if (name !== focusName) break;
+      const frame = String(msg.frame || "");
+      const m = frame.match(/^data:image\/jpeg;base64,(.+)$/);
+      if (!m) break;
+      try {
+        const buf  = Buffer.from(m[1], "base64");
+        const tmpA = path.join(os.tmpdir(), `mu-video-${safe}.jpg.tmp`);
+        const tmpB = path.join(os.tmpdir(), `mu-video-${safe}.jpg`);
+        fs.writeFileSync(tmpA, buf);
+        fs.renameSync(tmpA, tmpB);   // atomic — jit.matrix never reads a half-written file
+        Max.outlet("focus", "videoframe", tmpB);
+      } catch (e) {
+        // Drop frames on write failure; next frame will retry.
+      }
+      break;
+    }
     case "speech": {
       const text  = String(msg.text || "");
       const final = msg.final ? 1 : 0;
