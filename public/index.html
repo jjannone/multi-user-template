@@ -7,7 +7,10 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>multi-user template</title>
-  <link rel="stylesheet" href="/style.css" />
+  <!-- Relative (not /style.css) so the same index.html works both
+       LAN-served (Max serves from /) and Pages-served (under
+       /multi-user-template/). Absolute paths 404 on Pages. -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
@@ -21,6 +24,6 @@
     </div>
   </header>
   <main id="main"><!-- screens injected here --></main>
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

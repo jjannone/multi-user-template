@@ -669,6 +669,17 @@
 			},
 			{
 				"box" : 				{
+					"id" : "obj-route-print",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "" ],
+					"patching_rect" : [ 940.0, 740.0, 130.0, 22.0 ],
+					"text" : "route monitor"
+				}
+			},
+			{
+				"box" : 				{
 					"id" : "obj-print-server",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
@@ -1395,7 +1406,8 @@
 			{ "patchline" : { "source" : [ "obj-m-clear", 0 ],    "destination" : [ "obj-node", 0 ],       "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-node", 0 ],       "destination" : [ "obj-route", 0 ] } },
-			{ "patchline" : { "source" : [ "obj-node", 0 ],       "destination" : [ "obj-print-server", 0 ] } },
+			{ "patchline" : { "source" : [ "obj-node", 0 ],       "destination" : [ "obj-route-print", 0 ] } },
+			{ "patchline" : { "source" : [ "obj-route-print", 1 ], "destination" : [ "obj-print-server", 0 ] } },
 
 			{ "patchline" : { "source" : [ "obj-route", 3 ],      "destination" : [ "obj-p-url", 0 ],      "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-p-url", 0 ],      "destination" : [ "obj-c-url", 0 ],      "hidden" : 1 } },

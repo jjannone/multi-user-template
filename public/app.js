@@ -1673,15 +1673,15 @@ function renderLanding() {
       <h2>Three ways in</h2>
       <p>Pieces are reachable via one of three URL types. The operator decides which to hand out depending on whether you're on the venue's wifi (LAN), joining over the internet (cloud relay), or watching as audience.</p>
 
-      <h3 style="margin-top:14px;font-size:14px">1. Local (LAN)</h3>
+      <h3 id="local" style="margin-top:14px;font-size:14px">1. Local (LAN)</h3>
       <p><code>http://&lt;laptop-lan-ip&gt;:8080/</code></p>
       <p>Same wifi as the laptop running Max. Lowest latency, no internet required. The patch shows this URL as <strong>Local URL</strong>.</p>
 
-      <h3 style="margin-top:14px;font-size:14px">2. Performer (cloud)</h3>
+      <h3 id="performer" style="margin-top:14px;font-size:14px">2. Performer (cloud)</h3>
       <p><code>https://john.jann.one/multi-user-template/?cloud=…&piece=…&room=…</code></p>
       <p>Full Stage UI from anywhere with internet, via the Cloudflare Worker relay. Same sensor / MIDI / synth surface as LAN performers. The patch shows this URL as <strong>Performer URL</strong>.</p>
 
-      <h3 style="margin-top:14px;font-size:14px">3. Audience (cloud)</h3>
+      <h3 id="audience" style="margin-top:14px;font-size:14px">3. Audience (cloud)</h3>
       <p><code>https://john.jann.one/multi-user-template/?cloud=…&piece=…&room=…&view=audience</code></p>
       <p>Stripped-down UI: live roster + reaction buttons + a small audience-input pad. The patch shows this URL as <strong>Audience URL</strong>.</p>
 
