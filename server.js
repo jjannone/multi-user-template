@@ -688,14 +688,18 @@ function applyRoles(name, wantedRoles, password) {
     else if (validRoles.has(r)) next.add(r);
   });
   if (adminRequested) {
+    // Two regimes:
+    //   • cfg.password empty  → admin is a free role; anyone can claim it.
+    //   • cfg.password set    → admin requires the password challenge.
     if (cfg.password.length === 0) {
-      sendTo(sockets.get(name), { type: "error", message: "admin not enabled — no password set" });
+      next.add(ADMIN_ROLE);
+      p.isAdmin = true;
     } else if (password === cfg.password) {
       next.add(ADMIN_ROLE);
       p.isAdmin = true;
     } else {
-      // Wrong password — strip any prior admin status. The user can keep
-      // their non-admin roles; we just refuse the elevation.
+      // Wrong password — strip admin. Keep their non-admin roles; we just
+      // refuse the elevation.
       p.isAdmin = false;
       sendTo(sockets.get(name), { type: "error", message: "wrong admin password" });
     }
@@ -742,8 +746,14 @@ function snapshotFor(viewerName) {
   const out = {
     type:           "snapshot",
     started,
-    availableRoles: cfg.roles,
-    adminEnabled:   cfg.password.length > 0,
+    // "admin" is always presented as a role tile alongside the configured
+    // ones. adminRequiresPassword tells the client whether picking admin
+    // triggers a password challenge or is a free claim.
+    availableRoles:        cfg.roles.concat([ADMIN_ROLE]),
+    adminRequiresPassword: cfg.password.length > 0,
+    // Legacy field kept for any older clients that still read it; same
+    // semantics: true when picking admin requires a password.
+    adminEnabled:          cfg.password.length > 0,
     adminCount,
     roster
   };

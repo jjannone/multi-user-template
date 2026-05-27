@@ -140,33 +140,39 @@
 
 			{
 				"box" : 				{
-					"id" : "obj-c-pw",
-					"maxclass" : "comment",
+					"id" : "obj-b-pw",
+					"presentation" : 1,
+					"presentation_rect" : [ 720.0, 170.0, 32.0, 32.0 ],
+					"maxclass" : "button",
 					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 20.0, 176.0, 100.0, 20.0 ],
-					"text" : "Admin password"
+					"numoutlets" : 1,
+					"outlettype" : [ "bang" ],
+					"patching_rect" : [ 20.0, 174.0, 28.0, 28.0 ],
+					"bgcolor" : [ 1.0, 0.72, 0.3, 1.0 ]
 				}
 			},
 			{
 				"box" : 				{
-					"id" : "obj-t-pw",
-					"maxclass" : "textedit",
+					"id" : "obj-c-pw-l",
+					"presentation" : 1,
+					"presentation_rect" : [ 754.0, 176.0, 200.0, 20.0 ],
+					"maxclass" : "comment",
 					"numinlets" : 1,
-					"numoutlets" : 4,
-					"outlettype" : [ "", "int", "", "" ],
-					"patching_rect" : [ 130.0, 174.0, 240.0, 26.0 ],
-					"parameter_enable" : 1,
-					"saved_attribute_attributes" : 					{
-						"valueof" : 						{
-							"parameter_longname" : "adminPassword",
-							"parameter_shortname" : "adminPassword",
-							"parameter_type" : 3,
-							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "" ]
-						}
-					},
-					"text" : ""
+					"numoutlets" : 0,
+					"patching_rect" : [ 54.0, 178.0, 240.0, 20.0 ],
+					"text" : "Set admin password (blank = no password)"
+				}
+			},
+			{
+				"box" : 				{
+					"hidden" : 1,
+					"id" : "obj-dialog-pw",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 3,
+					"outlettype" : [ "", "", "" ],
+					"patching_rect" : [ 20.0, 206.0, 360.0, 22.0 ],
+					"text" : "dialog @label \"Admin password — leave blank to disable\" @mask 1"
 				}
 			},
 			{
@@ -177,7 +183,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 130.0, 204.0, 130.0, 22.0 ],
+					"patching_rect" : [ 20.0, 234.0, 130.0, 22.0 ],
 					"text" : "prepend setpassword"
 				}
 			},
@@ -187,8 +193,8 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 380.0, 176.0, 460.0, 20.0 ],
-					"text" : "Empty disables admin entirely. Multiple performers can authenticate; each is a full admin."
+					"patching_rect" : [ 380.0, 176.0, 600.0, 20.0 ],
+					"text" : "Click → dialog → type → OK. Blank password means \"admin\" is a free role; any value enables a password challenge."
 				}
 			},
 
@@ -1257,7 +1263,8 @@
 			{ "patchline" : { "source" : [ "obj-m-oscport", 0 ],  "destination" : [ "obj-node", 0 ],       "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-n-oscport", 0 ],  "destination" : [ "obj-udprecv", 0 ],    "midpoints" : [ 139.5, 600.0, 29.5, 600.0 ], "hidden" : 1 } },
 
-			{ "patchline" : { "source" : [ "obj-t-pw", 0 ],       "destination" : [ "obj-p-pw", 0 ],       "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-b-pw",      0 ], "destination" : [ "obj-dialog-pw", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-dialog-pw", 0 ], "destination" : [ "obj-p-pw",      0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-p-pw", 0 ],       "destination" : [ "obj-node", 0 ],       "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-t-roles", 0 ],    "destination" : [ "obj-p-roles", 0 ],    "hidden" : 1 } },

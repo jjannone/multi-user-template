@@ -250,8 +250,10 @@ function updateHeader() {
 // ── join screen ─────────────────────────────────────────────────
 
 function renderJoin() {
-  const adminEnabled = lastSnap && lastSnap.adminEnabled;
-  const roles        = (lastSnap && lastSnap.availableRoles) || [];
+  // adminRequiresPassword is the new authoritative flag; adminEnabled is
+  // kept as a fallback for snapshots from older servers (same meaning).
+  const adminRequiresPassword = lastSnap && (lastSnap.adminRequiresPassword ?? lastSnap.adminEnabled);
+  const roles                 = (lastSnap && lastSnap.availableRoles) || [];
   // Diagnostic for the empty-role-grid case: distinguish "haven't
   // received any snapshot yet" (waiting on relay or Max) from "got a
   // snapshot but the roles list is empty" (operator-side config error).
@@ -282,10 +284,9 @@ function renderJoin() {
       <div style="height:12px"></div>
       <h2>Roles</h2>
       <div class="role-grid" id="role-grid">
-        ${roles.map(r => `<div class="role-tile ${pendingRoles.has(r) ? "on" : ""}" data-role="${escAttr(r)}">${escHtml(r)}</div>`).join("")}
-        ${adminEnabled ? `<div class="role-tile admin ${pendingRoles.has("admin") ? "on" : ""}" data-role="admin">admin</div>` : ""}
+        ${roles.map(r => `<div class="role-tile ${pendingRoles.has(r) ? "on" : ""}${r === "admin" ? " admin" : ""}" data-role="${escAttr(r)}">${escHtml(r)}</div>`).join("")}
       </div>
-      ${(adminEnabled && pendingRoles.has("admin")) ? `
+      ${(adminRequiresPassword && pendingRoles.has("admin")) ? `
         <div style="height:10px"></div>
         <input id="admin-pw" type="password" placeholder="Admin password" autocomplete="off" />
       ` : ""}
