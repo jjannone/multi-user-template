@@ -433,8 +433,11 @@ function renderStage() {
   const tabId    = currentTabId();
   const tab      = TABS.find(t => t.id === tabId) || TABS[0];
   const wrap = document.createElement("div");
+  // No STOP button on the phone — only the patch-side STOP button can
+  // return everyone to the lobby. Letting any joined admin end the
+  // piece from their phone was easy to fire by accident on a touch UI;
+  // ending a piece is a deliberate operator action.
   wrap.innerHTML = `
-    ${youAdmin ? `<div class="row"><button class="warn" id="stop-btn" style="flex:1">STOP (back to lobby)</button></div>` : ""}
     <div class="tabbar" id="tabbar">
       ${TABS.map(t => `<div class="tab ${t.id === tabId ? "active" : ""}" data-tab="${t.id}">${escHtml(t.label)}</div>`).join("")}
     </div>
@@ -442,8 +445,6 @@ function renderStage() {
     <div class="footer-note">all values stream to Max over WebSocket and as OSC/UDP to <code>${escHtml(location.host)}</code></div>
   `;
   queueMicrotask(() => {
-    const stop = wrap.querySelector("#stop-btn");
-    if (stop) stop.onclick = sendStop;
     wrap.querySelectorAll("[data-tab]").forEach(el => {
       el.onclick = () => setTab(el.getAttribute("data-tab"));
     });
