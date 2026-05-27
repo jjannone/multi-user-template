@@ -385,19 +385,19 @@
 				"box" : 				{
 					"id" : "obj-c-url-l",
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 80.0, 50.0, 20.0 ],
+					"presentation_rect" : [ 20.0, 44.0, 130.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 20.0, 420.0, 60.0, 20.0 ],
-					"text" : "URL:"
+					"patching_rect" : [ 20.0, 420.0, 130.0, 20.0 ],
+					"text" : "Local URL:"
 				}
 			},
 			{
 				"box" : 				{
 					"id" : "obj-c-url",
 					"presentation" : 1,
-					"presentation_rect" : [ 70.0, 80.0, 600.0, 20.0 ],
+					"presentation_rect" : [ 150.0, 44.0, 1100.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -422,7 +422,7 @@
 				"box" : 				{
 					"id" : "obj-c-status-l",
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 104.0, 50.0, 20.0 ],
+					"presentation_rect" : [ 20.0, 120.0, 50.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -434,7 +434,7 @@
 				"box" : 				{
 					"id" : "obj-c-status",
 					"presentation" : 1,
-					"presentation_rect" : [ 70.0, 104.0, 600.0, 20.0 ],
+					"presentation_rect" : [ 70.0, 120.0, 800.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -459,7 +459,7 @@
 				"box" : 				{
 					"id" : "obj-c-roster-l",
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 128.0, 50.0, 20.0 ],
+					"presentation_rect" : [ 20.0, 144.0, 50.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -471,7 +471,7 @@
 				"box" : 				{
 					"id" : "obj-c-roster",
 					"presentation" : 1,
-					"presentation_rect" : [ 70.0, 128.0, 900.0, 20.0 ],
+					"presentation_rect" : [ 70.0, 144.0, 800.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -496,7 +496,7 @@
 				"box" : 				{
 					"id" : "obj-c-started-l",
 					"presentation" : 1,
-					"presentation_rect" : [ 700.0, 80.0, 70.0, 20.0 ],
+					"presentation_rect" : [ 900.0, 120.0, 70.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -508,7 +508,7 @@
 				"box" : 				{
 					"id" : "obj-i-started",
 					"presentation" : 1,
-					"presentation_rect" : [ 770.0, 78.0, 24.0, 24.0 ],
+					"presentation_rect" : [ 970.0, 118.0, 24.0, 24.0 ],
 					"maxclass" : "live.toggle",
 					"numinlets" : 1,
 					"numoutlets" : 2,
@@ -530,7 +530,7 @@
 				"box" : 				{
 					"id" : "obj-c-admin-l",
 					"presentation" : 1,
-					"presentation_rect" : [ 800.0, 80.0, 60.0, 20.0 ],
+					"presentation_rect" : [ 1000.0, 120.0, 60.0, 20.0 ],
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
@@ -542,7 +542,7 @@
 				"box" : 				{
 					"id" : "obj-n-admin",
 					"presentation" : 1,
-					"presentation_rect" : [ 858.0, 78.0, 50.0, 24.0 ],
+					"presentation_rect" : [ 1060.0, 118.0, 50.0, 24.0 ],
 					"maxclass" : "number",
 					"numinlets" : 1,
 					"numoutlets" : 2,
@@ -1211,7 +1211,7 @@
 					"numoutlets" : 0,
 					"patching_rect" : [ 700.0, 504.0, 130.0, 20.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 346.0, 130.0, 20.0 ],
+					"presentation_rect" : [ 20.0, 68.0, 130.0, 20.0 ],
 					"text" : "Performer URL:"
 				}
 			},
@@ -1223,7 +1223,7 @@
 					"numoutlets" : 0,
 					"patching_rect" : [ 700.0, 524.0, 600.0, 20.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 150.0, 346.0, 1100.0, 20.0 ],
+					"presentation_rect" : [ 150.0, 68.0, 1100.0, 20.0 ],
 					"text" : "(set Cloud URL, Piece, Room, Site base)"
 				}
 			},
@@ -1248,7 +1248,7 @@
 					"numoutlets" : 0,
 					"patching_rect" : [ 700.0, 580.0, 130.0, 20.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 370.0, 130.0, 20.0 ],
+					"presentation_rect" : [ 20.0, 92.0, 130.0, 20.0 ],
 					"text" : "Audience URL:"
 				}
 			},
@@ -1260,7 +1260,7 @@
 					"numoutlets" : 0,
 					"patching_rect" : [ 700.0, 600.0, 600.0, 20.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 150.0, 370.0, 1100.0, 20.0 ],
+					"presentation_rect" : [ 150.0, 92.0, 1100.0, 20.0 ],
 					"text" : "(set Cloud URL, Piece, Room, Site base)"
 				}
 			},
