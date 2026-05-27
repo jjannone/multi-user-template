@@ -923,96 +923,38 @@
 
 			{
 				"box" : 				{
-					"id" : "obj-c-piece",
-					"presentation" : 1,
-					"presentation_rect" : [ 20.0, 246.0, 60.0, 20.0 ],
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 700.0, 612.0, 100.0, 20.0 ],
-					"text" : "Piece"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-t-piece",
-					"presentation" : 1,
-					"presentation_rect" : [ 80.0, 244.0, 180.0, 26.0 ],
-					"maxclass" : "textedit",
-					"numinlets" : 1,
-					"numoutlets" : 4,
-					"outlettype" : [ "", "int", "", "" ],
-					"patching_rect" : [ 800.0, 610.0, 200.0, 26.0 ],
-					"parameter_enable" : 1,
-					"saved_attribute_attributes" : 					{
-						"valueof" : 						{
-							"parameter_longname" : "piece",
-							"parameter_shortname" : "piece",
-							"parameter_type" : 3,
-							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "multi-user-template" ]
-						}
-					},
-					"text" : "multi-user-template"
+					"hidden" : 1,
+					"id" : "obj-def-piece",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1200.0, 610.0, 260.0, 22.0 ],
+					"text" : "setpiece multi-user-template"
 				}
 			},
 			{
 				"box" : 				{
 					"hidden" : 1,
-					"id" : "obj-p-piece",
-					"maxclass" : "newobj",
+					"id" : "obj-def-room",
+					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 800.0, 638.0, 110.0, 22.0 ],
-					"text" : "prepend setpiece"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-c-room",
-					"presentation" : 1,
-					"presentation_rect" : [ 270.0, 246.0, 50.0, 20.0 ],
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 1020.0, 612.0, 60.0, 20.0 ],
-					"text" : "Room"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-t-room",
-					"presentation" : 1,
-					"presentation_rect" : [ 320.0, 244.0, 100.0, 26.0 ],
-					"maxclass" : "textedit",
-					"numinlets" : 1,
-					"numoutlets" : 4,
-					"outlettype" : [ "", "int", "", "" ],
-					"patching_rect" : [ 1080.0, 610.0, 100.0, 26.0 ],
-					"parameter_enable" : 1,
-					"saved_attribute_attributes" : 					{
-						"valueof" : 						{
-							"parameter_longname" : "room",
-							"parameter_shortname" : "room",
-							"parameter_type" : 3,
-							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "main" ]
-						}
-					},
-					"text" : "main"
+					"patching_rect" : [ 1200.0, 636.0, 140.0, 22.0 ],
+					"text" : "setroom main"
 				}
 			},
 			{
 				"box" : 				{
 					"hidden" : 1,
-					"id" : "obj-p-room",
-					"maxclass" : "newobj",
+					"id" : "obj-def-cloudurl",
+					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 1080.0, 638.0, 110.0, 22.0 ],
-					"text" : "prepend setroom"
+					"patching_rect" : [ 1200.0, 662.0, 380.0, 22.0 ],
+					"text" : "setcloudurl wss://mu-relay.jannone-544.workers.dev"
 				}
 			},
 
@@ -1126,45 +1068,14 @@
 			},
 			{
 				"box" : 				{
-					"id" : "obj-c-sitebase-l",
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 700.0, 444.0, 80.0, 20.0 ],
-					"text" : "Site base"
-				}
-			},
-			{
-				"box" : 				{
-					"id" : "obj-t-sitebase",
-					"maxclass" : "textedit",
-					"numinlets" : 1,
-					"numoutlets" : 4,
-					"outlettype" : [ "", "int", "", "" ],
-					"patching_rect" : [ 790.0, 442.0, 460.0, 26.0 ],
-					"parameter_enable" : 1,
-					"saved_attribute_attributes" : 					{
-						"valueof" : 						{
-							"parameter_longname" : "siteBase",
-							"parameter_shortname" : "siteBase",
-							"parameter_type" : 3,
-							"parameter_initial_enable" : 1,
-							"parameter_initial" : [ "https://john.jann.one/multi-user-template/" ]
-						}
-					},
-					"text" : "https://john.jann.one/multi-user-template/"
-				}
-			},
-			{
-				"box" : 				{
 					"hidden" : 1,
-					"id" : "obj-p-sitebase",
-					"maxclass" : "newobj",
+					"id" : "obj-def-sitebase",
+					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 790.0, 472.0, 130.0, 22.0 ],
-					"text" : "prepend setsitebase"
+					"patching_rect" : [ 1200.0, 688.0, 360.0, 22.0 ],
+					"text" : "setsitebase https://john.jann.one/multi-user-template/"
 				}
 			},
 
@@ -1392,10 +1303,6 @@
 			{ "patchline" : { "source" : [ "obj-msg-cutoff-hi",   0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-msg-modindex",    0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
 
-			{ "patchline" : { "source" : [ "obj-t-piece",    0 ],   "destination" : [ "obj-p-piece",    0 ],   "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-p-piece",    0 ],   "destination" : [ "obj-node", 0 ],         "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-t-room",     0 ],   "destination" : [ "obj-p-room",     0 ],   "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-p-room",     0 ],   "destination" : [ "obj-node", 0 ],         "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-b-cloudon",  0 ],   "destination" : [ "obj-m-cloudon",  0 ],   "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-m-cloudon",  0 ],   "destination" : [ "obj-node", 0 ],         "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-b-cloudoff", 0 ],   "destination" : [ "obj-m-cloudoff", 0 ],   "hidden" : 1 } },
@@ -1409,12 +1316,15 @@
 			{ "patchline" : { "source" : [ "obj-route",        9 ], "destination" : [ "obj-cellblock", 0 ], "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-loadbang",   0 ], "destination" : [ "obj-delay-init", 0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-piece",     0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-room",      0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-t-sitebase",  0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-def-piece",    0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-def-room",     0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-def-cloudurl", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-delay-init", 0 ], "destination" : [ "obj-def-sitebase", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-def-piece",    0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-def-room",     0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-def-cloudurl", 0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
+			{ "patchline" : { "source" : [ "obj-def-sitebase", 0 ], "destination" : [ "obj-node", 0 ], "hidden" : 1 } },
 
-			{ "patchline" : { "source" : [ "obj-t-sitebase",      0 ], "destination" : [ "obj-p-sitebase",  0 ], "hidden" : 1 } },
-			{ "patchline" : { "source" : [ "obj-p-sitebase",      0 ], "destination" : [ "obj-node",        0 ], "hidden" : 1 } },
 
 			{ "patchline" : { "source" : [ "obj-route-cloud",     2 ], "destination" : [ "obj-p-perform",   0 ], "hidden" : 1 } },
 			{ "patchline" : { "source" : [ "obj-p-perform",       0 ], "destination" : [ "obj-c-perform",   0 ], "hidden" : 1 } },
