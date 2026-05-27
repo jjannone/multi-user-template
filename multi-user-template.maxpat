@@ -2089,7 +2089,7 @@
                         20.0
                     ],
                     "fontname": "Courier",
-                    "text": "Video (Camera tab → Stream to Max)"
+                    "text": "Video (Camera tab \u2192 Stream to Max)"
                 }
             },
             {
@@ -2312,8 +2312,9 @@
                     "id": "obj-route-focus",
                     "maxclass": "newobj",
                     "numinlets": 1,
-                    "numoutlets": 7,
+                    "numoutlets": 8,
                     "outlettype": [
+                        "",
                         "",
                         "",
                         "",
@@ -2328,7 +2329,7 @@
                         360.0,
                         22.0
                     ],
-                    "text": "route name roles isadmin conn level videoframe"
+                    "text": "route name roles isadmin conn level videoframe audio"
                 }
             },
             {
@@ -3742,6 +3743,95 @@
                         22.0
                     ],
                     "text": "jit.matrix mu_focus_video 4 char 320 240 @usesrcdim 1"
+                }
+            },
+            {
+                "box": {
+                    "hidden": 1,
+                    "id": "obj-v8-audio",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [
+                        1800.0,
+                        1000.0,
+                        160.0,
+                        22.0
+                    ],
+                    "text": "v8 audio-bridge.js"
+                }
+            },
+            {
+                "box": {
+                    "hidden": 1,
+                    "id": "obj-buf-audio",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [
+                        ""
+                    ],
+                    "patching_rect": [
+                        1800.0,
+                        1030.0,
+                        220.0,
+                        22.0
+                    ],
+                    "text": "buffer~ mu_audio 96000 1"
+                }
+            },
+            {
+                "box": {
+                    "hidden": 1,
+                    "id": "obj-phasor",
+                    "maxclass": "newobj",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [
+                        "signal"
+                    ],
+                    "patching_rect": [
+                        1800.0,
+                        1060.0,
+                        80.0,
+                        22.0
+                    ],
+                    "text": "phasor~ 0.5"
+                }
+            },
+            {
+                "box": {
+                    "hidden": 1,
+                    "id": "obj-wave",
+                    "maxclass": "newobj",
+                    "numinlets": 3,
+                    "numoutlets": 1,
+                    "outlettype": [
+                        "signal"
+                    ],
+                    "patching_rect": [
+                        1800.0,
+                        1090.0,
+                        120.0,
+                        22.0
+                    ],
+                    "text": "wave~ mu_audio"
+                }
+            },
+            {
+                "box": {
+                    "hidden": 1,
+                    "id": "obj-dac",
+                    "maxclass": "newobj",
+                    "numinlets": 2,
+                    "numoutlets": 0,
+                    "patching_rect": [
+                        1800.0,
+                        1120.0,
+                        60.0,
+                        22.0
+                    ],
+                    "text": "dac~ 1 2"
                 }
             }
         ],
@@ -5194,6 +5284,67 @@
                     ],
                     "destination": [
                         "obj-pwindow",
+                        0
+                    ]
+                }
+            },
+            {
+                "patchline": {
+                    "source": [
+                        "obj-route-focus",
+                        6
+                    ],
+                    "destination": [
+                        "obj-v8-audio",
+                        0
+                    ],
+                    "hidden": 1
+                }
+            },
+            {
+                "patchline": {
+                    "source": [
+                        "obj-phasor",
+                        0
+                    ],
+                    "destination": [
+                        "obj-wave",
+                        0
+                    ]
+                }
+            },
+            {
+                "patchline": {
+                    "source": [
+                        "obj-wave",
+                        0
+                    ],
+                    "destination": [
+                        "obj-dac",
+                        0
+                    ]
+                }
+            },
+            {
+                "patchline": {
+                    "source": [
+                        "obj-wave",
+                        0
+                    ],
+                    "destination": [
+                        "obj-dac",
+                        1
+                    ]
+                }
+            },
+            {
+                "patchline": {
+                    "source": [
+                        "obj-wave",
+                        0
+                    ],
+                    "destination": [
+                        "obj-scope",
                         0
                     ]
                 }

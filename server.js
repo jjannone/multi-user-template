@@ -539,15 +539,24 @@ function handleSensor(name, msg) {
       sendOsc(`/user/${safe}/mic`, [level, peak]);
       recordSensor(name, "mic", `${level.toFixed(2)}/${peak.toFixed(2)}`);
       // Detail panel feed: control-rate level → patch's [sig~] which
-      // drives both [meter~] (VU) and [live.scope~] (waveform). With
-      // sig~ outputting a DC voltage that updates at the mic packet
-      // rate (~20 Hz), live.scope~ shows the step trace as the level
-      // history — i.e. the waveform of the AMPLITUDE ENVELOPE, not the
-      // raw audio. (Streaming raw audio samples would need a separate
-      // sensor kind + buffer~/poke~ on the patch side.)
+      // drives [meter~] for VU. The waveform display shows actual
+      // mic samples streamed under the "audio" kind below.
       if (name === focusName) {
         Max.outlet("focus", "level", level, peak);
       }
+      break;
+    }
+    case "audio": {
+      // Downsampled mic samples from the focused phone, sent as a
+      // numeric list. The patch's [zl group N] accumulates them and
+      // writes via [poke~] into a buffer~ that [play~] reads back
+      // through dac~ + live.scope~. Only forward for the focused
+      // performer — every other phone's raw audio would otherwise
+      // saturate the WS and the Max event queue.
+      if (name !== focusName) break;
+      const samples = Array.isArray(msg.samples) ? msg.samples : [];
+      if (samples.length === 0) break;
+      Max.outlet.apply(Max, ["focus", "audio"].concat(samples.map(numOr0)));
       break;
     }
     case "touch": {

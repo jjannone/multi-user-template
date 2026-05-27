@@ -74,7 +74,7 @@ const sensors = {
   pressure:  { on: false, sensor: null },
   proximity: { on: false },
   geo:       { on: false, watchId: null },
-  mic:       { on: false, ctx: null, stream: null, raf: 0, analyser: null },
+  mic:       { on: false, ctx: null, stream: null, raf: 0, analyser: null, audioProc: null, audioSrc: null, audioGain: null },
   camera:    { on: false, stream: null, streamTimer: 0, streamCanvas: null },
   speech:    { on: false, rec: null },
   pointer:   { on: false },
@@ -535,9 +535,75 @@ function renderAudioTab() {
   div.innerHTML =
     sensorCard("mic",    "Microphone level",   "rms peak (0–1)") +
     sensorCard("speech", "Speech-to-text",     "recognized phrases") +
-    `<div class="panel"><h2>Waveform</h2><canvas id="mic-wave" width="600" height="80" style="width:100%;height:80px;background:#0a0a0a;border-radius:8px"></canvas></div>`;
+    `<div class="panel"><h2>Waveform</h2><canvas id="mic-wave" width="600" height="80" style="width:100%;height:80px;background:#0a0a0a;border-radius:8px"></canvas></div>
+     <div class="panel">
+       <h2>Stream raw audio to Max</h2>
+       <p>Sends mic samples to the patch's Detail panel where they play back through dac~ + live.scope~. Only effective while the Mic card is on; only the currently-focused phone's audio is forwarded by the relay.</p>
+       <div class="row" style="margin-top:8px;align-items:center">
+         <label style="display:flex;align-items:center;gap:6px">
+           <input type="checkbox" id="mic-stream-audio" />
+           Stream raw audio
+         </label>
+       </div>
+       <div class="v" id="mic-stream-audio-status" style="font-size:12px;color:var(--muted);margin-top:6px">off</div>
+     </div>`;
   bindSensorCards(div);
+  queueMicrotask(() => {
+    const cb = div.querySelector("#mic-stream-audio");
+    if (cb) cb.onchange = () => setMicStreaming(cb.checked);
+  });
   return div;
+}
+
+// Raw-audio streaming for the Detail panel's [wave~] + dac~ + live.scope~.
+// Uses ScriptProcessorNode for simplicity (AudioWorklet would need a
+// separate worklet file). bufferSize=2048 → ~46 ms of audio per
+// message at 44.1 kHz, ~21 messages/sec. Sample data is sent as a
+// plain numeric list — server forwards as a Max list which the v8
+// bridge pokes into a buffer~.
+function setMicStreaming(on) {
+  const s = sensors.mic;
+  const status = document.getElementById("mic-stream-audio-status");
+  function off() {
+    if (s.audioProc) { try { s.audioProc.disconnect(); } catch (_) {} s.audioProc.onaudioprocess = null; s.audioProc = null; }
+    if (s.audioSrc)  { try { s.audioSrc.disconnect();  } catch (_) {} s.audioSrc = null; }
+    if (s.audioGain) { try { s.audioGain.disconnect(); } catch (_) {} s.audioGain = null; }
+    if (status) status.textContent = "off";
+  }
+  if (!on) { off(); return; }
+  if (!s.on || !s.ctx || !s.stream) {
+    if (status) status.textContent = "turn the Microphone level card on first";
+    const cb = document.getElementById("mic-stream-audio");
+    if (cb) cb.checked = false;
+    return;
+  }
+  try {
+    s.audioSrc  = s.ctx.createMediaStreamSource(s.stream);
+    s.audioProc = s.ctx.createScriptProcessor(2048, 1, 1);
+    // ScriptProcessor only fires onaudioprocess when connected to the
+    // destination. Route through a 0-gain node so the user doesn't
+    // hear their own mic feedback through Max → speakers → mic.
+    s.audioGain = s.ctx.createGain();
+    s.audioGain.gain.value = 0;
+    let posted = 0;
+    s.audioProc.onaudioprocess = (e) => {
+      const buf = e.inputBuffer.getChannelData(0);
+      // Convert Float32Array → plain Array; Max-API can't marshal
+      // typed arrays through Max.outlet.
+      const samples = new Array(buf.length);
+      for (let i = 0; i < buf.length; i++) samples[i] = buf[i];
+      sendSensor("audio", { samples });
+      posted++;
+      if (status && posted % 20 === 0) status.textContent = `streaming — ${posted} buffers (${posted * 2048} samples) sent`;
+    };
+    s.audioSrc.connect(s.audioProc);
+    s.audioProc.connect(s.audioGain);
+    s.audioGain.connect(s.ctx.destination);
+    if (status) status.textContent = "streaming — playback in patch's Detail panel";
+  } catch (e) {
+    if (status) status.textContent = "failed: " + e.message;
+    off();
+  }
 }
 
 function renderCameraTab() {
@@ -852,9 +918,19 @@ function stopSensor(key) {
       s.watchId = null; break;
     case "mic":
       cancelAnimationFrame(s.raf);
+      // Tear down audio streaming chain too — otherwise audioProc keeps
+      // a reference into the closed AudioContext and Chrome throws.
+      if (s.audioProc) { try { s.audioProc.disconnect(); } catch (_) {} s.audioProc.onaudioprocess = null; s.audioProc = null; }
+      if (s.audioSrc)  { try { s.audioSrc.disconnect();  } catch (_) {} s.audioSrc = null; }
+      if (s.audioGain) { try { s.audioGain.disconnect(); } catch (_) {} s.audioGain = null; }
       if (s.ctx)    { try { s.ctx.close(); } catch (_) {} }
       if (s.stream) s.stream.getTracks().forEach(t => t.stop());
-      s.ctx = null; s.stream = null; s.analyser = null; break;
+      s.ctx = null; s.stream = null; s.analyser = null;
+      const mscb = document.getElementById("mic-stream-audio");
+      if (mscb) mscb.checked = false;
+      const msst = document.getElementById("mic-stream-audio-status");
+      if (msst) msst.textContent = "off";
+      break;
     case "speech":
       if (s.rec) { try { s.rec.stop(); } catch (_) {} }
       s.rec = null; break;
