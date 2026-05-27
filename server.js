@@ -898,7 +898,15 @@ Max.addHandler("setoschost", (h) => {
   startOsc();
 });
 
+// Max textedits emit their content prefixed with the literal symbol
+// `text` when banged (e.g. by the patch's loadbang chain). Strip it so
+// handlers see the actual content.
+function teArgs(args) {
+  return (args.length > 0 && String(args[0]) === "text") ? args.slice(1) : args;
+}
+
 Max.addHandler("setpassword", (...args) => {
+  args = teArgs(args);
   // Accept either a single symbol or a list (Max sometimes splits on spaces).
   cfg.password = args.map(String).join(" ").trim();
   Max.post(`admin password ${cfg.password ? "set" : "cleared (admin disabled)"}`);
@@ -908,6 +916,7 @@ Max.addHandler("setpassword", (...args) => {
 });
 
 Max.addHandler("setroles", (...args) => {
+  args = teArgs(args);
   // setroles role1 role2 role3 ...   replaces the non-admin role list.
   const list = args.map(String).map(s => s.trim()).filter(s => s && s !== ADMIN_ROLE);
   if (list.length === 0) {
@@ -1265,11 +1274,13 @@ function handleRemotePerformInbound(msg) {
 // ── Max handlers for the cloud bridge ───────────────────────────
 
 Max.addHandler("setcloudurl", (...args) => {
+  args = teArgs(args);
   cloudCfg.url = args.map(String).join(" ").trim();
   Max.post(`cloud URL → ${cloudCfg.url || "(empty)"}`);
   emitShareUrls();
 });
 Max.addHandler("setpiece", (...args) => {
+  args = teArgs(args);
   const s = args.map(String).join("-").trim();
   if (!/^[A-Za-z0-9_\-]+$/.test(s)) {
     emitCloudStatus("piece must match [A-Za-z0-9_-]");
@@ -1280,6 +1291,7 @@ Max.addHandler("setpiece", (...args) => {
   emitShareUrls();
 });
 Max.addHandler("setroom", (...args) => {
+  args = teArgs(args);
   const s = args.map(String).join("-").trim() || "main";
   if (!/^[A-Za-z0-9_\-]+$/.test(s)) {
     emitCloudStatus("room must match [A-Za-z0-9_-]");
@@ -1290,6 +1302,7 @@ Max.addHandler("setroom", (...args) => {
   emitShareUrls();
 });
 Max.addHandler("setsitebase", (...args) => {
+  args = teArgs(args);
   // Where the static index.html is hosted — typically a GitHub Pages URL
   // like https://<user>.github.io/<repo>/. Trailing slash is normalized.
   cloudCfg.siteBase = args.map(String).join(" ").trim();
